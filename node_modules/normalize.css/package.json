@@ -1,0 +1,47 @@
+{
+  "name": "normalize.css",
+  "version": "3.0.2",
+  "description": "Normalize.css as a node packaged module",
+  "style": "normalize.css",
+  "files": [
+    "normalize.css"
+  ],
+  "homepage": "http://necolas.github.io/normalize.css",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/necolas/normalize.css.git"
+  },
+  "author": {
+    "name": "Nicolas Gallagher"
+  },
+  "license": "MIT",
+  "gitHead": "d83132802e8bc10ece0c0afbe88fce83674ec252",
+  "bugs": {
+    "url": "https://github.com/necolas/normalize.css/issues"
+  },
+  "_id": "normalize.css@3.0.2",
+  "scripts": {},
+  "_shasum": "060310d24f5e0394f3a42672edb6e80956e8efd4",
+  "_from": "normalize.css@*",
+  "_npmVersion": "1.4.26",
+  "_npmUser": {
+    "name": "necolas",
+    "email": "nicolasgallagher@gmail.com"
+  },
+  "maintainers": [
+    {
+      "name": "tjholowaychuk",
+      "email": "tj@vision-media.ca"
+    },
+    {
+      "name": "necolas",
+      "email": "nicolasgallagher@gmail.com"
+    }
+  ],
+  "dist": {
+    "shasum": "060310d24f5e0394f3a42672edb6e80956e8efd4",
+    "tarball": "http://registry.npmjs.org/normalize.css/-/normalize.css-3.0.2.tgz"
+  },
+  "directories": {},
+  "_resolved": "https://registry.npmjs.org/normalize.css/-/normalize.css-3.0.2.tgz"
+}
