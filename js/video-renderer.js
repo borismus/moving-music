@@ -92,14 +92,17 @@ VideoRenderer.prototype.addLight = function() {
 
 VideoRenderer.prototype.addPointCloud = function(params) {
   params = params || {};
-  var color = params.color || 0x333333;
+  var color = params.color || 0xffffff;
   // Create the particle variables.
   var particleCount = 50;
   var particles = new THREE.Geometry();
-  var pMaterial = new THREE.PointCloudMaterial({
+  var material = new THREE.PointCloudMaterial({
     color: color,
-    size: 5,
+    size: 20,
+    map: THREE.ImageUtils.loadTexture('img/particle.png'),
     blending: THREE.AdditiveBlending,
+    transparent: true,
+    depthTest: false,
   });
 
   // Now create the individual particles.
@@ -111,15 +114,14 @@ VideoRenderer.prototype.addPointCloud = function(params) {
     // Give this particle a custom rotation quaternion.
     particle.rotation = Util.randomQuaternion();
     // Generate a random period for the particle.
-    particle.period = Util.randomBetween(2000, 5000);
+    particle.period = Util.randomBetween(1000, 2000);
 
     // Add particle to the geometry.
     particles.vertices.push(particle);
   }
 
-  // create the particle system
-  var cloud = new THREE.PointCloud(particles, pMaterial);
-  cloud.sortParticles = true;
+  // Create the particle system
+  var cloud = new THREE.PointCloud(particles, material);
 
   // add it to the scene
   this.scene.add(cloud);
@@ -218,6 +220,9 @@ VideoRenderer.prototype.render = function() {
     // Also, update the particle system based on the track's intensity.
     this.animatePointCloud(id, trackObject);
   }
+
+  // Update the manager with the current heading.
+  this.manager.setCameraQuaternion(this.camera.quaternion);
 
   if (this.vr.isVRMode()) {
     this.effect.render(this.scene, this.camera);

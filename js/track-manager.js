@@ -15,3 +15,11 @@ TrackManager.prototype.addTrack = function(track) {
   // Get all of the tracks synchronized.
   track.trajectory.setReferenceTime(this.referenceTime);
 };
+
+TrackManager.prototype.setCameraQuaternion = function(quaternion) {
+  this.cameraQuaternion = quaternion;
+};
+
+TrackManager.prototype.getCameraQuaternion = function() {
+  return this.cameraQuaternion;
+};

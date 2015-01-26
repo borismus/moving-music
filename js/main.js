@@ -24,8 +24,9 @@ function start() {
     trajectory: new EllipticalTrajectory({
       xAxis: 100,
       zAxis: 200,
-      center: [0,20,-100],
-      period: 10000,
+      //center: [0,20,-100],
+      period: 20000,
+      phase: 3*Math.PI/2 - Math.PI/3,
       pitch: Math.PI/16,
     })
   });
@@ -33,9 +34,9 @@ function start() {
     src: 'snd/Shishkabob Stems - FX.mp3',
     color: 0x0000FF,
     trajectory: new EllipticalTrajectory({
-      center: [0,0,-100],
+      //center: [0,0,-100],
       radius: 200,
-      period: 15000,
+      period: 25000,
       phase: Math.PI
     })
   });
@@ -43,7 +44,7 @@ function start() {
     src: 'snd/Shishkabob Stems - Synths 3.mp3',
     color: 0x00FF00,
     trajectory: new EllipticalTrajectory({
-      center: [0,-50,-100],
+      //center: [0,-50,-100],
       radius: 300,
       period: 12000,
       direction: 'ccw',
@@ -55,7 +56,7 @@ function start() {
     src: 'snd/Shishkabob Stems - Synths 2.mp3',
     color: 0x00FFFF,
     trajectory: new EllipticalTrajectory({
-      center: [0,50,-100],
+      //center: [0,50,-100],
       radius: 100,
       period: 20000,
       pitch: -Math.PI/24,
@@ -67,9 +68,9 @@ function start() {
     src: 'snd/Shishkabob Stems - Vocal.mp3',
     color: 0xFF00FF,
     trajectory: new EllipticalTrajectory({
-      center: [0,0,-100],
+      //center: [0,0,-100],
       radius: 150,
-      period: 15000,
+      period: 18000,
       phase: Math.PI
     })
   });
@@ -77,9 +78,9 @@ function start() {
     src: 'snd/Shishkabob Stems - Vocal.mp3',
     color: 0xFF00FF,
     trajectory: new EllipticalTrajectory({
-      center: [0,0,-100],
+      //center: [0,0,-100],
       radius: 150,
-      period: 8000,
+      period: 18000,
     })
   });
   manager.addTrack(track1);

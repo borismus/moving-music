@@ -7,8 +7,10 @@ function MovingTrack(params) {
   // Generate a UUID so that the track can be uniquely identified.
   this.id = Util.generateUUID();
 
-  // Track the amplitude of the track.
+  // The current amplitude of the track.
   this.amplitude = 0;
+  // Whether or not the track is currently in the field of view.
+  this.inFov = false;
 }
 
 MovingTrack.prototype.update = function() {

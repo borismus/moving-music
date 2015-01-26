@@ -1,3 +1,7 @@
+var IN_FOV_GAIN = 1;
+var OUT_FOV_GAIN = 0.2;
+var FOV_RAMP_TIME = 0.7; // seconds.
+
 function AudioRenderer() {
   // Whether we should stream the tracks via MediaElements, or load them
   // directly as audio buffers.
@@ -5,6 +9,7 @@ function AudioRenderer() {
 
   // Various audio nodes keyed on UUID (so we can update them later).
   this.panners = {};
+  this.gains = {};
   this.buffers = {};
   this.audioTags = {};
   this.ready = {};
@@ -23,6 +28,10 @@ AudioRenderer.prototype.init = function() {
   // TODO: Fix up for prefixing.
   window.AudioContext = window.AudioContext||window.webkitAudioContext;
   this.context = new AudioContext();
+
+  // For calculating isTrackWithinFov_:
+  this.cameraDirection = new THREE.Vector3();
+  this.trackPosition = new THREE.Vector3();
 };
 
 AudioRenderer.prototype.setManager = function(manager) {
@@ -50,18 +59,23 @@ AudioRenderer.prototype.start = function() {
     }
     // Create a panner for each source.
     var panner = this.context.createPanner();
+    panner.panningModel = 'HRTF';
     panner.refDistance = 100;
 
     // Create an analyser to calculate amplitude per track.
     var analyser = this.context.createAnalyser();
 
+    var gain = this.context.createGain();
+
     // Connect the audio graph.
     source.connect(analyser);
-    analyser.connect(panner);
+    analyser.connect(gain);
+    gain.connect(panner);
     panner.connect(this.context.destination);
 
     // Store nodes for later use.
     this.panners[id] = panner;
+    this.gains[id] = gain;
     this.analysers[id] = analyser;
 
     if (this.isStreaming) {
@@ -73,6 +87,9 @@ AudioRenderer.prototype.start = function() {
 };
 
 AudioRenderer.prototype.render = function() {
+  // Set the orientation of the observer
+  this.setOrientation_();
+
   // Update the position of the objects.
   for (var id in this.manager.tracks) {
     var track = this.manager.tracks[id];
@@ -81,7 +98,12 @@ AudioRenderer.prototype.render = function() {
     if (!panner) {
       return console.error('No panner found for id: %s.', id);
     }
+
+    // Set the position of each track object as they spin.
     panner.setPosition(track.position[0], track.position[1], track.position[2]);
+
+    // Create the gain-based observer soundcone.
+    this.setObserverCone_(id);
 
     // Also calculate the amplitude of the signal.
     var maxAmp = this.calculateAmplitude_(id);
@@ -156,4 +178,47 @@ AudioRenderer.prototype.calculateAmplitude_ = function(id) {
     }
   }
   return maxAmp;
+};
+
+/**
+ * Implements an observer soundcone similar to what panners do for audio sources.
+ */
+AudioRenderer.prototype.setObserverCone_ = function(id) {
+  var gain = this.gains[id].gain;
+  var track = this.manager.tracks[id];
+  var inFov = this.isTrackWithinFov_(id, 40);
+  // If the track is entering the field of view, ramp up.
+  if (inFov && !track.inFov) {
+    console.log('Fading in %s', track.src);
+    gain.linearRampToValueAtTime(IN_FOV_GAIN,
+        this.context.currentTime + FOV_RAMP_TIME);
+  }
+  // If the track is leaving the field of view, ramp down.
+  if (!inFov && track.inFov) {
+    console.log('Fading out %s', track.src);
+    gain.linearRampToValueAtTime(OUT_FOV_GAIN,
+        this.context.currentTime + FOV_RAMP_TIME);
+  }
+  track.inFov = inFov;
+};
+
+AudioRenderer.prototype.isTrackWithinFov_ = function(id, fov) {
+  // Get a unit vector pointing in the direction of the camera.
+  var camera = this.manager.getCameraQuaternion();
+  this.cameraDirection.set(0, 0, -1);
+  this.cameraDirection.applyQuaternion(camera);
+
+  // Now get the vector corresponding to the position of this track.
+  var position = this.manager.tracks[id].position;
+  this.trackPosition.set(position[0], position[1], position[2]);
+  var angle = this.cameraDirection.angleTo(this.trackPosition);
+  return angle < THREE.Math.degToRad(fov);
+};
+
+AudioRenderer.prototype.setOrientation_ = function() {
+  var camera = this.manager.getCameraQuaternion();
+  this.cameraDirection.set(0, 0, -1);
+  this.cameraDirection.applyQuaternion(camera);
+  var dir = this.cameraDirection;
+  this.context.listener.setOrientation(dir.x, dir.y, dir.z, 0, 0, 1);
 };
