@@ -48,7 +48,7 @@ VideoRenderer.prototype.init = function() {
   var effect = new THREE.VREffect(renderer);
   effect.setSize(window.innerWidth, window.innerHeight);
 
-  this.vr = new VRManager(effect);
+  this.vr = new WebVRManager(effect);
 
   if (this.overview) {
     // Make it look down on the origin from the +y axis.
