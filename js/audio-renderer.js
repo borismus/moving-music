@@ -1,10 +1,16 @@
+// Observer's sound cone configuration.
 var IN_FOV_GAIN = 1;
-var OUT_FOV_GAIN = 0.2;
-var FOV_RAMP_TIME = 0.7; // seconds.
+var OUT_FOV_GAIN = 0.4;
+var FOV_RAMP_TIME = 1;
+
+// Doppler effect configuration.
+var ENABLE_DOPPLER = false;
+var DOPPLER_FACTOR = 0.1;
 
 function AudioRenderer() {
   // Whether we should stream the tracks via MediaElements, or load them
   // directly as audio buffers.
+  // TODO(smus): Once crbug.com/419446 is fixed, switch to streaming.
   this.isStreaming = false;
 
   // Various audio nodes keyed on UUID (so we can update them later).
@@ -101,6 +107,12 @@ AudioRenderer.prototype.render = function() {
 
     // Set the position of each track object as they spin.
     panner.setPosition(track.position[0], track.position[1], track.position[2]);
+    if (ENABLE_DOPPLER) {
+      panner.setVelocity(track.velocity[0] * DOPPLER_FACTOR,
+                         track.velocity[1] * DOPPLER_FACTOR,
+                         track.velocity[2] * DOPPLER_FACTOR
+      );
+    }
 
     // Create the gain-based observer soundcone.
     this.setObserverCone_(id);

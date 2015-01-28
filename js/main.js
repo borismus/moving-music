@@ -1,6 +1,4 @@
 // Connect the start VR button.
-document.querySelector('#start').addEventListener('click', start);
-
 function main() {
   start();
 }
@@ -19,7 +17,8 @@ function start() {
   manager = new TrackManager();
   // Create a couple of dummy tracks for now.
   var track1 = new MovingTrack({
-    src: 'snd/Shishkabob Stems - Synths 1.mp3',
+    //src: 'snd/Shishkabob Stems - Synths 1.mp3',
+    src: 'snd/Accapela.mp3',
     color: 0xFF0000,
     trajectory: new EllipticalTrajectory({
       xAxis: 100,
@@ -31,7 +30,8 @@ function start() {
     })
   });
   var track2 = new MovingTrack({
-    src: 'snd/Shishkabob Stems - FX.mp3',
+    //src: 'snd/Shishkabob Stems - FX.mp3',
+    src: 'snd/Bass.mp3',
     color: 0x0000FF,
     trajectory: new EllipticalTrajectory({
       //center: [0,0,-100],
@@ -41,7 +41,8 @@ function start() {
     })
   });
   var track3 = new MovingTrack({
-    src: 'snd/Shishkabob Stems - Synths 3.mp3',
+    //src: 'snd/Shishkabob Stems - Synths 3.mp3',
+    src: 'snd/Beat.mp3',
     color: 0x00FF00,
     trajectory: new EllipticalTrajectory({
       //center: [0,-50,-100],
@@ -53,7 +54,8 @@ function start() {
     })
   });
   var track4 = new MovingTrack({
-    src: 'snd/Shishkabob Stems - Synths 2.mp3',
+    //src: 'snd/Shishkabob Stems - Synths 2.mp3',
+    src: 'snd/Guitar.mp3',
     color: 0x00FFFF,
     trajectory: new EllipticalTrajectory({
       //center: [0,50,-100],
@@ -65,7 +67,8 @@ function start() {
     })
   });
   var track5 = new MovingTrack({
-    src: 'snd/Shishkabob Stems - Vocal.mp3',
+    //src: 'snd/Shishkabob Stems - Vocal.mp3',
+    src: 'snd/Key.mp3',
     color: 0xFF00FF,
     trajectory: new EllipticalTrajectory({
       //center: [0,0,-100],
@@ -74,8 +77,9 @@ function start() {
       phase: Math.PI
     })
   });
-  var track5 = new MovingTrack({
-    src: 'snd/Shishkabob Stems - Vocal.mp3',
+  var track6 = new MovingTrack({
+    //src: 'snd/Shishkabob Stems - Vocal.mp3',
+    src: 'snd/Roll.mp3',
     color: 0xFF00FF,
     trajectory: new EllipticalTrajectory({
       //center: [0,0,-100],
@@ -88,6 +92,7 @@ function start() {
   manager.addTrack(track3);
   manager.addTrack(track4);
   manager.addTrack(track5);
+  manager.addTrack(track6);
 
   // Create a video renderer.
   video = new VideoRenderer({selector: '#container', overview: false});
@@ -99,6 +104,9 @@ function start() {
   audio = new AudioRenderer();
   audio.setManager(manager);
   audio.on('ready', onRendererReady);
+
+  // Show a "use headphones" dialog briefly.
+  showHeadphonesDialog();
 }
 
 function onRendererReady() {
@@ -112,6 +120,14 @@ function loop() {
   audio.render();
 
   requestAnimationFrame(loop);
+}
+
+function showHeadphonesDialog() {
+  var headphones = document.querySelector('#headphones');
+  headphones.style.opacity = 1;
+  setTimeout(function() {
+    headphones.style.opacity = 0;
+  }, 3000);
 }
 
 window.addEventListener('DOMContentLoaded', main);

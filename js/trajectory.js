@@ -14,7 +14,7 @@ Trajectory.prototype.setReferenceTime = function(time) {
 
 function FixedTrajectory(params) {
   this.type = 'fixed';
-  this.position = params.position || [0,0,0];
+  this.position = params.position || new THREE.Vector3();
 }
 FixedTrajectory.prototype = new Trajectory();
 
@@ -55,6 +55,7 @@ EllipticalTrajectory.prototype = new Trajectory();
 EllipticalTrajectory.prototype.init = function() {
   // Variables to reduce allocations and make calculations more efficient.
   this.position = new THREE.Vector3();
+  this.velocity = new THREE.Vector3();
   this.euler = new THREE.Euler();
   this.quaternion = new THREE.Quaternion();
   this.centerVec = new THREE.Vector3(this.center[0], this.center[1], this.center[2]);
@@ -78,12 +79,21 @@ EllipticalTrajectory.prototype.update = function(movingTrack) {
     0,
     Math.sin(angle) * this.zAxis
   );
-  // Calculate the quaternion based on pitch and roll.
+  // Velocity is the derivative of position.
+  this.velocity.set(
+    -Math.sin(angle) * this.xAxis,
+    0,
+    Math.cos(angle) * this.zAxis
+  );
+  // Calculate the quaternion based on pitch and roll, and rotate both.
   this.euler.set(this.pitch, this.yaw, this.roll, 'XYZ');
   this.quaternion.setFromEuler(this.euler);
-  // Rotate the position into 3D.
+
+  // Rotate the position and velocity into 3D.
   this.position.applyQuaternion(this.quaternion);
   this.position.add(this.centerVec);
+  this.velocity.applyQuaternion(this.quaternion);
 
   movingTrack.position = [this.position.x, this.position.y, this.position.z];
+  movingTrack.velocity = [this.velocity.x, this.velocity.y, this.velocity.z];
 };
