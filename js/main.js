@@ -15,76 +15,67 @@ function start() {
 
   // Create the world.
   manager = new TrackManager();
+  var period = 30000;
+  var radius = 200;
   // Create a couple of dummy tracks for now.
   var track1 = new MovingTrack({
-    //src: 'snd/Shishkabob Stems - Synths 1.mp3',
-    src: 'snd/Accapela.mp3',
+    src: 'snd/Shishkabob Stems - Synths 1.mp3',
+    //src: 'snd/Accapela.mp3',
     color: 0xFF0000,
     trajectory: new EllipticalTrajectory({
-      xAxis: 100,
-      zAxis: 200,
-      //center: [0,20,-100],
-      period: 20000,
-      phase: 3*Math.PI/2 - Math.PI/3,
-      pitch: Math.PI/16,
+      period: period,
+      phase: 0,
+      radius: radius,
     })
   });
   var track2 = new MovingTrack({
-    //src: 'snd/Shishkabob Stems - FX.mp3',
-    src: 'snd/Bass.mp3',
+    src: 'snd/Shishkabob Stems - FX.mp3',
+    //src: 'snd/Bass.mp3',
     color: 0x0000FF,
     trajectory: new EllipticalTrajectory({
-      //center: [0,0,-100],
-      radius: 200,
-      period: 25000,
-      phase: Math.PI
+      period: period,
+      phase: Math.PI/3,
+      radius: radius,
     })
   });
   var track3 = new MovingTrack({
-    //src: 'snd/Shishkabob Stems - Synths 3.mp3',
-    src: 'snd/Beat.mp3',
+    src: 'snd/Shishkabob Stems - Synths 3.mp3',
+    //src: 'snd/Beat.mp3',
     color: 0x00FF00,
     trajectory: new EllipticalTrajectory({
-      //center: [0,-50,-100],
-      radius: 300,
-      period: 12000,
-      direction: 'ccw',
-      roll: Math.PI/16,
-      phase: Math.PI/2
+      period: period,
+      phase: 2*Math.PI/3,
+      radius: radius,
     })
   });
   var track4 = new MovingTrack({
-    //src: 'snd/Shishkabob Stems - Synths 2.mp3',
-    src: 'snd/Guitar.mp3',
+    src: 'snd/Shishkabob Stems - Synths 2.mp3',
+    //src: 'snd/Guitar.mp3',
     color: 0x00FFFF,
     trajectory: new EllipticalTrajectory({
-      //center: [0,50,-100],
-      radius: 100,
-      period: 20000,
-      pitch: -Math.PI/24,
-      direction: 'ccw',
-      phase: 3*Math.PI/2
+      period: period,
+      phase: 3*Math.PI/3,
+      radius: radius,
     })
   });
   var track5 = new MovingTrack({
-    //src: 'snd/Shishkabob Stems - Vocal.mp3',
-    src: 'snd/Key.mp3',
+    src: 'snd/Shishkabob Stems - Vocal.mp3',
+    //src: 'snd/Key.mp3',
     color: 0xFF00FF,
     trajectory: new EllipticalTrajectory({
-      //center: [0,0,-100],
-      radius: 150,
-      period: 18000,
-      phase: Math.PI
+      period: period,
+      phase: 4*Math.PI/3,
+      radius: radius,
     })
   });
   var track6 = new MovingTrack({
-    //src: 'snd/Shishkabob Stems - Vocal.mp3',
-    src: 'snd/Roll.mp3',
-    color: 0xFF00FF,
+    src: 'snd/Shishkabob Stems - Percussion.mp3',
+    //src: 'snd/Roll.mp3',
+    color: 0xFFFF00,
     trajectory: new EllipticalTrajectory({
-      //center: [0,0,-100],
-      radius: 150,
-      period: 18000,
+      period: period,
+      phase: 5*Math.PI/3,
+      radius: radius,
     })
   });
   manager.addTrack(track1);
