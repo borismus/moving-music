@@ -3,8 +3,9 @@ function Trajectory() {
   this.referenceTime = new Date();
 }
 
-Trajectory.prototype.update = function(movingTrack) {
-  return 'Not implemented';
+Trajectory.prototype.update = function(movingTrack, opt_timeDelta) {
+  var position = this.getPosition(opt_timeDelta);
+  movingTrack.position = [position.x, position.y, position.z];
 };
 
 Trajectory.prototype.setReferenceTime = function(time) {
@@ -12,18 +13,26 @@ Trajectory.prototype.setReferenceTime = function(time) {
 };
 
 
+/**
+ * The null trajectory (object is fixed in place).
+ */
 function FixedTrajectory(params) {
+  params = params || {};
   this.type = 'fixed';
   this.position = params.position || new THREE.Vector3();
 }
 FixedTrajectory.prototype = new Trajectory();
 
-FixedTrajectory.prototype.update = function(movingTrack, timeDelta) {
-  return;
+
+FixedTrajectory.prototype.getPosition = function(opt_timeDelta) {
+  return this.position;
 };
 
 
 
+/**
+ * Elliptical trajectory.
+ */
 function EllipticalTrajectory(params) {
   this.type = 'elliptical';
 
@@ -61,8 +70,10 @@ EllipticalTrajectory.prototype.init = function() {
   this.centerVec = new THREE.Vector3(this.center[0], this.center[1], this.center[2]);
 };
 
-EllipticalTrajectory.prototype.update = function(movingTrack) {
-  var elapsed = new Date() - this.referenceTime;
+EllipticalTrajectory.prototype.getAngle = function(opt_timeDelta) {
+  var now = new Date();
+  var timeDelta = opt_timeDelta || 0;
+  var elapsed = now - this.referenceTime + timeDelta;
   var relative = elapsed % this.period;
   var percent = relative / this.period;
   // Counterclockwise percentages are negative.
@@ -72,6 +83,29 @@ EllipticalTrajectory.prototype.update = function(movingTrack) {
 
   // The angle on the ellipse.
   var angle = percent * Math.PI * 2 + this.phase;
+  return angle;
+};
+
+EllipticalTrajectory.prototype.getVelocity = function(opt_timeDelta) {
+  var angle = this.getAngle(opt_timeDelta);
+  // Velocity is the derivative of position.
+  this.velocity.set(
+    -Math.sin(angle) * this.xAxis,
+    0,
+    Math.cos(angle) * this.zAxis
+  );
+
+  // Calculate the quaternion based on pitch and roll.
+  this.euler.set(this.pitch, this.yaw, this.roll, 'XYZ');
+  this.quaternion.setFromEuler(this.euler);
+
+  // Rotate the position and velocity into 3D.
+  this.velocity.applyQuaternion(this.quaternion);
+  return this.velocity;
+};
+
+EllipticalTrajectory.prototype.getPosition = function(opt_timeDelta) {
+  var angle = this.getAngle(opt_timeDelta);
 
   // Calculate the position on the 2D elliptical orbit.
   this.position.set(
@@ -79,21 +113,50 @@ EllipticalTrajectory.prototype.update = function(movingTrack) {
     0,
     Math.sin(angle) * this.zAxis
   );
-  // Velocity is the derivative of position.
-  this.velocity.set(
-    -Math.sin(angle) * this.xAxis,
-    0,
-    Math.cos(angle) * this.zAxis
-  );
-  // Calculate the quaternion based on pitch and roll, and rotate both.
+  // Calculate the quaternion based on pitch and roll.
   this.euler.set(this.pitch, this.yaw, this.roll, 'XYZ');
   this.quaternion.setFromEuler(this.euler);
 
   // Rotate the position and velocity into 3D.
   this.position.applyQuaternion(this.quaternion);
   this.position.add(this.centerVec);
-  this.velocity.applyQuaternion(this.quaternion);
 
-  movingTrack.position = [this.position.x, this.position.y, this.position.z];
-  movingTrack.velocity = [this.velocity.x, this.velocity.y, this.velocity.z];
+  return this.position;
+};
+
+EllipticalTrajectory.prototype.update = function(movingTrack) {
+  var position = this.getPosition();
+  var velocity = this.getVelocity();
+  movingTrack.position = [position.x, position.y, position.z];
+  movingTrack.velocity = [velocity.x, velocity.y, velocity.z];
+};
+
+/**
+ * Object moves from one point to another on a line.
+ */
+function LinearTrajectory(params) {
+  params = params || {};
+  this.start = params.start || [0,0,0];
+  this.end = params.end || [1,1,1];
+  this.duration = params.duration || 5000;
+  this.startTime = new Date();
+
+  this.init();
+}
+LinearTrajectory.prototype = new Trajectory();
+
+LinearTrajectory.prototype.init = function() {
+  this.position = new THREE.Vector3();
+};
+
+LinearTrajectory.prototype.getPosition = function(opt_timeDelta) {
+  var now = new Date();
+  var timeDelta = opt_timeDelta || 0;
+  var elapsed = now - this.startTime + timeDelta;
+  var percent = elapsed / this.duration;
+
+  // Linearly interpolate between start and end points.
+  this.position.copy(this.start);
+  this.position.lerp(this.end, percent);
+  return this.position;
 };

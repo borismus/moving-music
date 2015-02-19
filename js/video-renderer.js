@@ -51,9 +51,9 @@ VideoRenderer.prototype.init = function() {
   this.vr = new WebVRManager(effect);
 
   if (this.overview) {
-    // Make it look down on the origin from the +y axis.
+    // Make camera look down on the origin from the +y axis.
     camera.position.set(0, 500, 0);
-    camera.up = new THREE.Vector3(0, 0, -1);
+    camera.up = new THREE.Vector3(0, 0, 1);
     camera.lookAt(new THREE.Vector3(0, 0, 0));
   }
 

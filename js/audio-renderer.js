@@ -1,11 +1,13 @@
 // Observer's sound cone configuration.
 var IN_FOV_GAIN = 1;
-var OUT_FOV_GAIN = 0.4;
-var FOV_RAMP_TIME = 1;
+var OUT_FOV_GAIN = 0.5;
+var FOV_RAMP_TIME = 1.5;
 
 // Doppler effect configuration.
 var ENABLE_DOPPLER = false;
 var DOPPLER_FACTOR = 0.1;
+
+var REF_DISTANCE = 300;
 
 function AudioRenderer() {
   // Whether we should stream the tracks via MediaElements, or load them
@@ -38,6 +40,21 @@ AudioRenderer.prototype.init = function() {
   // For calculating isTrackWithinFov_:
   this.cameraDirection = new THREE.Vector3();
   this.trackPosition = new THREE.Vector3();
+
+  // Pipe the mix through a convolver node for a room effect.
+  var convolver = this.context.createConvolver();
+  this.loadTrackSrc_('snd/forest_impulse_response.wav', function(buffer) {
+    convolver.buffer = buffer;
+  });
+  convolver.connect(this.context.destination);
+
+  // Setup the mix.
+  var mix = this.context.createGain();
+  mix.connect(convolver);
+
+
+  this.convolver = convolver;
+  this.mix = mix;
 };
 
 AudioRenderer.prototype.setManager = function(manager) {
@@ -66,7 +83,7 @@ AudioRenderer.prototype.start = function() {
     // Create a panner for each source.
     var panner = this.context.createPanner();
     panner.panningModel = 'HRTF';
-    panner.refDistance = 100;
+    panner.refDistance = REF_DISTANCE;
 
     // Create an analyser to calculate amplitude per track.
     var analyser = this.context.createAnalyser();
@@ -77,7 +94,8 @@ AudioRenderer.prototype.start = function() {
     source.connect(analyser);
     analyser.connect(gain);
     gain.connect(panner);
-    panner.connect(this.context.destination);
+    panner.connect(this.mix);
+    //panner.connect(this.context.destination);
 
     // Store nodes for later use.
     this.panners[id] = panner;
@@ -143,17 +161,22 @@ AudioRenderer.prototype.streamTrack_ = function(id) {
 
 AudioRenderer.prototype.loadTrack_ = function(id) {
   var track = this.manager.tracks[id];
+  this.loadTrackSrc_(track.src, function(buffer) {
+    this.buffers[id] = buffer;
+    this.ready[id] = true;
+    this.initializeIfReady_();
+  }.bind(this));
+};
 
+AudioRenderer.prototype.loadTrackSrc_ = function(src, callback) {
   var request = new XMLHttpRequest();
-  request.open('GET', track.src, true);
+  request.open('GET', src, true);
   request.responseType = 'arraybuffer';
 
   // Decode asynchronously.
   request.onload = function() {
     this.context.decodeAudioData(request.response, function(buffer) {
-      this.buffers[id] = buffer;
-      this.ready[id] = true;
-      this.initializeIfReady_();
+      callback(buffer);
     }.bind(this), function(e) {
       console.error(e);
     });
@@ -231,6 +254,9 @@ AudioRenderer.prototype.setOrientation_ = function() {
   var camera = this.manager.getCameraQuaternion();
   this.cameraDirection.set(0, 0, -1);
   this.cameraDirection.applyQuaternion(camera);
-  var dir = this.cameraDirection;
-  this.context.listener.setOrientation(dir.x, dir.y, dir.z, 0, 0, 1);
+  var dir = this.cameraDirection.clone();
+  this.cameraDirection.set(0, 1, 0);
+  this.cameraDirection.applyQuaternion(camera);
+  var up = this.cameraDirection;
+  this.context.listener.setOrientation(dir.x, dir.y, dir.z, up.x, up.y, up.z);
 };
