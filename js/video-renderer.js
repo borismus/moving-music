@@ -173,10 +173,11 @@ VideoRenderer.prototype.addSkybox = function() {
 };
 
 
-VideoRenderer.prototype.toast = function(message, opt_duration) {
+VideoRenderer.prototype.toast = function(opt_message, opt_duration) {
+  var message = opt_message || '';
   this.textDuration = opt_duration || 5000;
   // Remove the existing text mesh if needed.
-  if (this.text) {
+  if (this.text || !message) {
     this.camera.remove(this.text);
   }
 
@@ -261,7 +262,7 @@ VideoRenderer.prototype.addText_ = function(text) {
     height: 5,
     curveSegments: 5,
 
-    font: 'helvetiker',
+    font: 'droid sans',
     weight: 'normal',
     style: 'normal',
 
@@ -289,7 +290,9 @@ VideoRenderer.prototype.addText_ = function(text) {
 VideoRenderer.prototype.animatePointCloud_ = function(id, cloud) {
   var track = this.manager.tracks[id];
   var RADIUS = 100;
-  var radius = track.amplitude * RADIUS;
+  // To give even quiet tracks some motion.
+  var FUDGE_FACTOR = 1;
+  var radius = FUDGE_FACTOR + track.amplitude * RADIUS;
   var now = new Date();
   var vertices = cloud.geometry.vertices;
   for (var i = 0; i < vertices.length; i++) {

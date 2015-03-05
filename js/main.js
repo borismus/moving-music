@@ -26,16 +26,17 @@ function start() {
   audio.on('ready', onAudioLoaded);
 
   // Show a "use headphones" dialog briefly.
-  video.toast('please put on headphones');
+  video.toast('headphones required', 8000);
 
   // After a little while, if we're not loaded yet, start updating progress.
   setTimeout(function() {
-    progressInterval = setInterval(updateProgress, 3000);
+    progressInterval = setInterval(updateProgress, 500);
   }, 3000);
 
   loop();
 }
 
+var counter = 0;
 function updateProgress() {
   if (isLoaded) {
     clearTimeout(progressInterval);
@@ -44,9 +45,15 @@ function updateProgress() {
     }
     return;
   }
-  var percent = Math.floor(audio.getLoadingProgress() * 100);
-  console.log(percent)
-  video.toast('loading... ' + percent + '%', 3000);
+  var percent = audio.getLoadingProgress();
+  if (percent < 1) {
+    var percentLabel = Math.floor(percent * 100);
+    video.toast('loading... ' + percentLabel + '%', 3000);
+  } else {
+    // We've loaded the audio tracks, and now we're just decoding them.
+    video.toast('decoding' + this.dots(counter % 4), 3000);
+  }
+  counter += 1;
 }
 
 function onAudioLoaded() {
@@ -94,6 +101,14 @@ function onKeyDown(e) {
 
 function iOS() {
   return /(iPhone|iPod|iPad)/i.test(navigator.userAgent);
+}
+
+function dots(num) {
+  var out = '';
+  for (var i = 0; i < num; i++) {
+    out += '.';
+  }
+  return out;
 }
 
 window.addEventListener('DOMContentLoaded', main);

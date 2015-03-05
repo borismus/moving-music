@@ -16,7 +16,7 @@ def main():
   src = sys.argv[1]
   dst = 'snd'
 
-  convert_and_chunk(src, dst, 20)
+  convert_and_trim(src, dst, 120)
 
 
 def convert_and_trim(src, dst, duration):

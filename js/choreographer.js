@@ -3,7 +3,10 @@ function Choreographer() {
   this.mode_ = -1;
   this.callbacks_ = {};
 
-  this.init();
+  //this.init();
+  this.initVocal();
+
+  this.setMode(Choreographer.Modes.CLUSTERED);
 }
 
 Choreographer.Modes = {
@@ -15,34 +18,26 @@ Choreographer.TOTAL_MODE_COUNT = 3;
 
 Choreographer.prototype.init = function() {
   var vocal = new MovingTrack({
-    name: 'synths1',
     src: 'snd/Accapela.mp3',
-    srcFormat: this.getFormat('Accapela'),
     color: 0xB8A795,
   });
   var bass = new MovingTrack({
     src: 'snd/Bass.mp3',
-    srcFormat: this.getFormat('Bass'),
     color: 0xD97D48,
   });
   var beat = new MovingTrack({
     src: 'snd/Beat.mp3',
-    srcFormat: this.getFormat('Beat'),
     color: 0x77A6A0,
   });
   var guitar = new MovingTrack({
     src: 'snd/Guitar.mp3',
-    srcFormat: this.getFormat('Guitar'),
     color: 0x19414B,
   });
   var keys = new MovingTrack({
     src: 'snd/Key.mp3',
-    srcFormat: this.getFormat('Key'),
     color: 0xACF0F2,
   });
   var percussion = new MovingTrack({
-    name: 'percussion',
-    srcFormat: this.getFormat('Roll'),
     src: 'snd/Roll.mp3',
     color: 0x1695A3,
   });
@@ -52,9 +47,31 @@ Choreographer.prototype.init = function() {
   this.manager.addTrack(vocal);
   this.manager.addTrack(guitar);
   this.manager.addTrack(keys); // Don't do much -- keep on periphery.
-
-  this.setMode(Choreographer.Modes.CLUSTERED);
 }
+
+Choreographer.prototype.initVocal = function() {
+  var cats = new MovingTrack({
+    src: 'snd/Cats.mp3',
+    color: 0xB8A795,
+  });
+  var nimoy = new MovingTrack({
+    src: 'snd/Nimoy.mp3',
+    color: 0xD97D48,
+  });
+  var roth = new MovingTrack({
+    src: 'snd/Roth.mp3',
+    color: 0x77A6A0,
+  });
+  var russian = new MovingTrack({
+    src: 'snd/Russian.mp3',
+    color: 0x19414B,
+  });
+
+  this.manager.addTrack(cats); // Don't do much -- keep on periphery.
+  this.manager.addTrack(nimoy);
+  this.manager.addTrack(roth);
+  this.manager.addTrack(russian);
+};
 
 /**
  * Set the current mode of the musical playback: CLUSTERED, SURROUND or MOVING.
@@ -85,16 +102,12 @@ Choreographer.prototype.setNextMode = function() {
   this.setMode(newMode % Choreographer.TOTAL_MODE_COUNT, 3000);
 };
 
-Choreographer.prototype.getFormat = function(name) {
-  return 'snd/chunks/' + name + '/' + name + '-{{index}}.mp3';
-};
-
 
 /**
  * Creates fixed position trajectories clustered around a point.
  */
 Choreographer.prototype.createClusteredTrajectory_ = function(index) {
-  var clusterPoint = new THREE.Vector3(0, 0, -200);
+  var clusterPoint = new THREE.Vector3(0, -10, -200);
   var angleRange = Math.PI/3;
 
   var percent = index / (this.manager.trackCount - 1);
