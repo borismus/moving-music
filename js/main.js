@@ -15,7 +15,7 @@ function start() {
   choreographer.on('modechanged', onModeChanged);
 
   // Create a video renderer.
-  video = new VideoRenderer({selector: '#container', overview: false});
+  video = new VideoRenderer({selector: 'body', overview: false});
   video.setManager(manager);
   video.addLight();
   video.addSkybox();
@@ -39,6 +39,9 @@ function start() {
 function updateProgress() {
   if (isLoaded) {
     clearTimeout(progressInterval);
+    if (iOS()) {
+      video.toast('tap to start');
+    }
     return;
   }
   var percent = Math.floor(audio.getLoadingProgress() * 100);
@@ -73,12 +76,11 @@ function loop() {
   requestAnimationFrame(loop);
 }
 
-var isTapped = false;
+var isStarted = false;
 function onTouchStart() {
-  var isIOS = /(iPhone|iPod|iPad)/i.test(navigator.userAgent);
-  if (isIOS && !isTapped) {
+  if (iOS() && !isStarted && isLoaded) {
     audio.start();
-    isTapped = true;
+    isStarted = true;
   } else {
     choreographer.setNextMode();
   }
@@ -88,6 +90,10 @@ function onKeyDown(e) {
   if (e.keyCode == 32) {
     choreographer.setNextMode();
   }
+}
+
+function iOS() {
+  return /(iPhone|iPod|iPad)/i.test(navigator.userAgent);
 }
 
 window.addEventListener('DOMContentLoaded', main);
