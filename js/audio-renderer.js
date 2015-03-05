@@ -4,7 +4,7 @@ var OUT_FOV_GAIN = 0.5;
 var FOV_RAMP_TIME = 1.5;
 
 // Doppler effect configuration.
-var ENABLE_DOPPLER = true;
+var ENABLE_DOPPLER = false;
 var DOPPLER_FACTOR = 0.1;
 
 var REF_DISTANCE = 300;
