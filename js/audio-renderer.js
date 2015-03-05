@@ -117,7 +117,7 @@ AudioRenderer.prototype.start = function() {
     } else if (this.isChunking) {
       source.play();
     } else {
-      source.start();
+      source.start(0);
     }
   }
 };
