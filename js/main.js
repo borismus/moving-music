@@ -40,7 +40,7 @@ function updateProgress() {
   if (isLoaded) {
     clearTimeout(progressInterval);
     if (iOS()) {
-      video.toast('tap to start');
+      video.toast('tap to start', 10000);
     }
     return;
   }
