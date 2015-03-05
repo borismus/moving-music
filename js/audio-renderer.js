@@ -29,7 +29,7 @@ function AudioRenderer() {
   this.ready = {};
   this.analysers = {};
 
-  this.times = new Float32Array(2048);
+  this.times = new Uint8Array(2048);
 
   // Callbacks.
   this.callbacks = {};
@@ -224,17 +224,21 @@ AudioRenderer.prototype.initializeIfReady_ = function() {
   }
 };
 
+/**
+ * Returns a value in [0,1].
+ */
 AudioRenderer.prototype.calculateAmplitude_ = function(id) {
   var analyser = this.analysers[id];
-  analyser.getFloatTimeDomainData(this.times);
+  // NB: getFloatTimeDomainData is newer, still not available in iOS8.
+  analyser.getByteTimeDomainData(this.times);
   var maxAmp = -Infinity;
   for (var i = 0; i < this.times.length; i++) {
-    var amp = this.times[i];
+    var amp = 128-this.times[i];
     if (amp > maxAmp) {
       maxAmp = amp;
     }
   }
-  return maxAmp;
+  return maxAmp/128;
 };
 
 /**
