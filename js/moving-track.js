@@ -1,12 +1,9 @@
 function MovingTrack(params) {
   this.src = params.src || null;
+  this.srcFormat = params.srcFormat || null;
   this.position = params.position || [0,0,0];
   this.velocity = params.velocity || [0,0,0];
-  // Keep track of the active and inactive trajectories.
-  this.activeTrajectory = params.trajectory;
-  this.inactiveTrajectory = params.inactiveTrajectory || new FixedTrajectory();
-  this.trajectory = this.inactiveTrajectory;
-  this.isActive = false;
+  this.trajectory = params.trajectory || new FixedTrajectory();
   this.color = params.color || 0x00FF00;
   this.name = params.name || null;
   // Generate a UUID so that the track can be uniquely identified.
@@ -45,28 +42,4 @@ MovingTrack.prototype.changeTrajectory = function(newTrajectory, transitionTime)
   this.trajectoryTimer = setTimeout(function() {
     this.trajectory = newTrajectory;
   }.bind(this), transitionTime);
-};
-
-MovingTrack.prototype.isActivationNeeded = function() {
-  if (this.isActive) {
-    return false;
-  }
-  return this.amplitude > 0.05;
-};
-
-MovingTrack.prototype.isDeactivationNeeded = function() {
-  if (!this.isActive) {
-    return false;
-  }
-  return this.amplitude < 0.005;
-};
-
-MovingTrack.prototype.activate = function() {
-  this.changeTrajectory(this.activeTrajectory, 5000);
-  this.isActive = true;
-};
-
-MovingTrack.prototype.deactivate = function() {
-  this.changeTrajectory(this.inactiveTrajectory, 3000);
-  this.isActive = false;
 };

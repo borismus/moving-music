@@ -35,7 +35,7 @@ VideoRenderer.prototype.init = function() {
   var scene = new THREE.Scene();
 
   // Create a WebGL renderer.
-  var renderer = new THREE.WebGLRenderer();
+  var renderer = new THREE.WebGLRenderer({antialias: true});
   renderer.setSize(this.width, this.height);
 
   // Create a camera.
@@ -145,8 +145,8 @@ VideoRenderer.prototype.addSphere = function(color) {
 VideoRenderer.prototype.addSkybox = function() {
   // Load the cube textures.
   //var prefix = 'img/';
-  var prefix = 'img/space/';
-  var urls = ['posx.png', 'negx.png', 'posy.png', 'negy.png', 'posz.png', 'negz.png'];
+  var prefix = 'img/';
+  var urls = ['posx.jpeg', 'negx.jpeg', 'posy.jpeg', 'negy.jpeg', 'posz.jpeg', 'negz.jpeg'];
   for (var i = 0; i < urls.length; i++) {
     urls[i] = prefix + urls[i];
   }
@@ -172,24 +172,18 @@ VideoRenderer.prototype.addSkybox = function() {
   return skybox;
 };
 
-VideoRenderer.prototype.animatePointCloud = function(id, cloud) {
-  var track = this.manager.tracks[id];
-  var RADIUS = 100;
-  var radius = track.amplitude * RADIUS;
-  var now = new Date();
-  var vertices = cloud.geometry.vertices;
-  for (var i = 0; i < vertices.length; i++) {
-    var particle = vertices[i];
-    var time = (now - this.referenceTime) % particle.period;
-    var percent = time / particle.period;
-    var angle = percent * Math.PI * 2;
-    // Generate a position on a 2D circle.
-    particle.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
-    // Apply a quaternion to place the particle on the right orbit.
-    particle.applyQuaternion(particle.rotation);
+
+VideoRenderer.prototype.toast = function(message, opt_duration) {
+  this.textDuration = opt_duration || 5000;
+  // Remove the existing text mesh if needed.
+  if (this.text) {
+    this.camera.remove(this.text);
   }
-  cloud.geometry.verticesNeedUpdate = true;
+
+  this.text = this.addText_(message);
+  this.textCreated = new Date();
 };
+
 
 VideoRenderer.prototype.onWindowResize = function() {
   this.width = window.innerWidth;
@@ -218,11 +212,14 @@ VideoRenderer.prototype.render = function() {
     trackObject.position.set(track.position[0], track.position[1], track.position[2]);
 
     // Also, update the particle system based on the track's intensity.
-    this.animatePointCloud(id, trackObject);
+    this.animatePointCloud_(id, trackObject);
   }
 
   // Update the manager with the current heading.
   this.manager.setCameraQuaternion(this.camera.quaternion);
+
+  // Update the toast.
+  this.updateToast_();
 
   if (this.vr.isVRMode()) {
     this.effect.render(this.scene, this.camera);
@@ -230,3 +227,82 @@ VideoRenderer.prototype.render = function() {
     this.renderer.render(this.scene, this.camera);
   }
 };
+
+VideoRenderer.prototype.updateToast_ = function() {
+  // If there's no toast to show, do nothing.
+  if (!this.text) {
+    return;
+  }
+  var elapsed = new Date() - this.textCreated;
+  var percent = elapsed / this.textDuration;
+
+  // If the toast is done, remove the text from the scene and nullify.
+  if (percent >= 1) {
+    this.camera.remove(this.text);
+    this.text = null;
+    return;
+  }
+
+  // Set the material opacity throughout.
+  var materials = this.text.material.materials;
+  for (var i = 0; i < materials.length; i++) {
+    var material = materials[i];
+    material.opacity = 1 - percent;
+  }
+};
+
+VideoRenderer.prototype.addText_ = function(text) {
+  var material = new THREE.MeshFaceMaterial([
+    new THREE.MeshPhongMaterial({ color: 0xffffff, shading: THREE.FlatShading, transparent: true }), // front
+    new THREE.MeshPhongMaterial({ color: 0xffffff, shading: THREE.SmoothShading, transparent: true }) // side
+  ]);
+  var geometry = new THREE.TextGeometry(text, {
+    size: 20,
+    height: 5,
+    curveSegments: 5,
+
+    font: 'helvetiker',
+    weight: 'normal',
+    style: 'normal',
+
+    bevelThickness: 0.5,
+    bevelSize: 0.5,
+    bevelEnabled: 1,
+
+    material: 0,
+    extrudeMaterial: 1
+  });
+
+  var textMesh = new THREE.Mesh(geometry, material);
+
+  geometry.computeBoundingBox();
+  var width = geometry.boundingBox.max.x - geometry.boundingBox.min.x;
+  var centerOffset = -0.5 * width;
+  textMesh.position.set(centerOffset, 0, -300);
+
+  // Position this text in camera space.
+  this.camera.add(textMesh);
+
+  return textMesh;
+};
+
+VideoRenderer.prototype.animatePointCloud_ = function(id, cloud) {
+  var track = this.manager.tracks[id];
+  var RADIUS = 100;
+  var radius = track.amplitude * RADIUS;
+  var now = new Date();
+  var vertices = cloud.geometry.vertices;
+  for (var i = 0; i < vertices.length; i++) {
+    var particle = vertices[i];
+    var time = (now - this.referenceTime) % particle.period;
+    var percent = time / particle.period;
+    var angle = percent * Math.PI * 2;
+    // Generate a position on a 2D circle.
+    particle.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
+    // Apply a quaternion to place the particle on the right orbit.
+    particle.applyQuaternion(particle.rotation);
+  }
+  cloud.geometry.verticesNeedUpdate = true;
+};
+
+

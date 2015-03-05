@@ -4,7 +4,7 @@ var OUT_FOV_GAIN = 0.5;
 var FOV_RAMP_TIME = 1.5;
 
 // Doppler effect configuration.
-var ENABLE_DOPPLER = false;
+var ENABLE_DOPPLER = true;
 var DOPPLER_FACTOR = 0.1;
 
 var REF_DISTANCE = 300;
@@ -14,12 +14,18 @@ function AudioRenderer() {
   // directly as audio buffers.
   // TODO(smus): Once crbug.com/419446 is fixed, switch to streaming.
   this.isStreaming = false;
+  this.isChunking = false;
 
   // Various audio nodes keyed on UUID (so we can update them later).
   this.panners = {};
   this.gains = {};
   this.buffers = {};
+  // Tracking buffer loading progress.
+  this.progress = {};
+  // For streaming.
   this.audioTags = {};
+  // For chunking.
+  this.players = {};
   this.ready = {};
   this.analysers = {};
 
@@ -43,7 +49,7 @@ AudioRenderer.prototype.init = function() {
 
   // Pipe the mix through a convolver node for a room effect.
   var convolver = this.context.createConvolver();
-  this.loadTrackSrc_('snd/forest_impulse_response.wav', function(buffer) {
+  Util.loadTrackSrc(this.context, 'snd/forest_impulse_response.wav', function(buffer) {
     convolver.buffer = buffer;
   });
   convolver.connect(this.context.destination);
@@ -63,6 +69,8 @@ AudioRenderer.prototype.setManager = function(manager) {
   for (var id in manager.tracks) {
     if (this.isStreaming) {
       this.streamTrack_(id);
+    } else if (this.isChunking) {
+      this.chunkTrack_(id);
     } else {
       this.loadTrack_(id);
     }
@@ -75,6 +83,8 @@ AudioRenderer.prototype.start = function() {
     if (this.isStreaming) {
       source = this.context.createMediaElementSource(this.audioTags[id]);
       source.loop = true;
+    } else if (this.isChunking) {
+      source = this.players[id]
     } else {
       source = this.context.createBufferSource();
       source.buffer = this.buffers[id];
@@ -104,6 +114,8 @@ AudioRenderer.prototype.start = function() {
 
     if (this.isStreaming) {
       source.mediaElement.play();
+    } else if (this.isChunking) {
+      source.play();
     } else {
       source.start();
     }
@@ -145,6 +157,13 @@ AudioRenderer.prototype.on = function(event, callback) {
   this.callbacks[event] = callback;
 };
 
+AudioRenderer.prototype.getLoadingProgress = function() {
+  var totalProgress = 0;
+  for (var id in this.progress) {
+    totalProgress += this.progress[id];
+  }
+  return totalProgress / this.manager.trackCount;
+};
 
 
 
@@ -161,28 +180,31 @@ AudioRenderer.prototype.streamTrack_ = function(id) {
 
 AudioRenderer.prototype.loadTrack_ = function(id) {
   var track = this.manager.tracks[id];
-  this.loadTrackSrc_(track.src, function(buffer) {
+  Util.loadTrackSrc(this.context, track.src, function(buffer) {
     this.buffers[id] = buffer;
     this.ready[id] = true;
     this.initializeIfReady_();
+  }.bind(this), function(progress) {
+    this.progress[id] = progress;
   }.bind(this));
 };
 
-AudioRenderer.prototype.loadTrackSrc_ = function(src, callback) {
-  var request = new XMLHttpRequest();
-  request.open('GET', src, true);
-  request.responseType = 'arraybuffer';
+AudioRenderer.prototype.chunkTrack_ = function(id) {
+  var track = this.manager.tracks[id];
+  var player = new AudioChunkPlayer(this.context, {
+    urlFormat: track.srcFormat
+  });
+  player.on('progress', function(progress) {
+    if (progress > 0.1) {
+      this.ready[id] = true;
+      this.players[id] = player;
+      this.initializeIfReady_();
+    }
+  }.bind(this));
+  player.load();
+  return;
 
-  // Decode asynchronously.
-  request.onload = function() {
-    this.context.decodeAudioData(request.response, function(buffer) {
-      callback(buffer);
-    }.bind(this), function(e) {
-      console.error(e);
-    });
-  }.bind(this)
-  request.send();
-};
+}
 
 AudioRenderer.prototype.initializeIfReady_ = function() {
   // We're ready if all of the tracks are loaded (ie. there's a buffer for
