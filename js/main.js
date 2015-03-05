@@ -73,12 +73,15 @@ function loop() {
   requestAnimationFrame(loop);
 }
 
+var isTapped = false;
 function onTouchStart() {
   var isIOS = /(iPhone|iPod|iPad)/i.test(navigator.userAgent);
-  if (isIOS) {
+  if (isIOS && !isTapped) {
     audio.start();
+    isTapped = true;
+  } else {
+    choreographer.setNextMode();
   }
-  choreographer.setNextMode();
 }
 
 function onKeyDown(e) {
