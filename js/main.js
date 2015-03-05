@@ -74,6 +74,10 @@ function loop() {
 }
 
 function onTouchStart() {
+  var isIOS = /(iPhone|iPod|iPad)/i.test(navigator.userAgent);
+  if (isIOS) {
+    audio.start();
+  }
   choreographer.setNextMode();
 }
 
