@@ -234,6 +234,7 @@ WebVRManager.prototype.onTouchEnd = function(e) {
 
 WebVRManager.prototype.onButtonClick = function(e) {
   e.stopPropagation();
+  e.preventDefault();
   this.toggleVRMode();
 };
 

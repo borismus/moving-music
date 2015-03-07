@@ -47,7 +47,7 @@ var counter = 0;
 function updateProgress() {
   if (isLoaded) {
     clearTimeout(progressInterval);
-    if (iOS()) {
+    if (Util.iOS()) {
       video.toast('tap to start', 10000);
     }
     return;
@@ -92,7 +92,7 @@ function loop() {
 
 var isStarted = false;
 function onTouchStart() {
-  if (iOS() && !isStarted && isLoaded) {
+  if (Util.iOS() && !isStarted && isLoaded) {
     audio.start();
     isStarted = true;
   } else {
@@ -104,10 +104,6 @@ function onKeyDown(e) {
   if (e.keyCode == 32) {
     choreographer.setNextMode();
   }
-}
-
-function iOS() {
-  return /(iPhone|iPod|iPad)/i.test(navigator.userAgent);
 }
 
 function dots(num) {
