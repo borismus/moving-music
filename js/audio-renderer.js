@@ -13,7 +13,7 @@ function AudioRenderer() {
   // Whether we should stream the tracks via MediaElements, or load them
   // directly as audio buffers.
   // TODO(smus): Once crbug.com/419446 is fixed, switch to streaming.
-  this.isStreaming = Util.isMobile();
+  this.isStreaming = !Util.isMobile();
 
   // Various audio nodes keyed on UUID (so we can update them later).
   this.panners = {};
