@@ -26,7 +26,14 @@ function start() {
   audio.on('ready', onAudioLoaded);
 
   // Show a "use headphones" dialog briefly.
-  video.toast('headphones required', 8000);
+  WebFont.load({
+    google: {
+      families: ['Dosis']
+    },
+    active: function() {
+      video.toast('headphones required', 5000);
+    },
+  });
 
   // After a little while, if we're not loaded yet, start updating progress.
   setTimeout(function() {

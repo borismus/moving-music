@@ -13,8 +13,7 @@ function AudioRenderer() {
   // Whether we should stream the tracks via MediaElements, or load them
   // directly as audio buffers.
   // TODO(smus): Once crbug.com/419446 is fixed, switch to streaming.
-  this.isStreaming = false;
-  this.isChunking = false;
+  this.isStreaming = true;
 
   // Various audio nodes keyed on UUID (so we can update them later).
   this.panners = {};
@@ -24,8 +23,6 @@ function AudioRenderer() {
   this.progress = {};
   // For streaming.
   this.audioTags = {};
-  // For chunking.
-  this.players = {};
   this.ready = {};
   this.analysers = {};
 
@@ -69,8 +66,6 @@ AudioRenderer.prototype.setManager = function(manager) {
   for (var id in manager.tracks) {
     if (this.isStreaming) {
       this.streamTrack_(id);
-    } else if (this.isChunking) {
-      this.chunkTrack_(id);
     } else {
       this.loadTrack_(id);
     }
@@ -83,8 +78,6 @@ AudioRenderer.prototype.start = function() {
     if (this.isStreaming) {
       source = this.context.createMediaElementSource(this.audioTags[id]);
       source.loop = true;
-    } else if (this.isChunking) {
-      source = this.players[id]
     } else {
       source = this.context.createBufferSource();
       source.buffer = this.buffers[id];
@@ -114,8 +107,6 @@ AudioRenderer.prototype.start = function() {
 
     if (this.isStreaming) {
       source.mediaElement.play();
-    } else if (this.isChunking) {
-      source.play();
     } else {
       source.start(0);
     }
@@ -188,23 +179,6 @@ AudioRenderer.prototype.loadTrack_ = function(id) {
     this.progress[id] = progress;
   }.bind(this));
 };
-
-AudioRenderer.prototype.chunkTrack_ = function(id) {
-  var track = this.manager.tracks[id];
-  var player = new AudioChunkPlayer(this.context, {
-    urlFormat: track.srcFormat
-  });
-  player.on('progress', function(progress) {
-    if (progress > 0.1) {
-      this.ready[id] = true;
-      this.players[id] = player;
-      this.initializeIfReady_();
-    }
-  }.bind(this));
-  player.load();
-  return;
-
-}
 
 AudioRenderer.prototype.initializeIfReady_ = function() {
   // We're ready if all of the tracks are loaded (ie. there's a buffer for

@@ -244,44 +244,41 @@ VideoRenderer.prototype.updateToast_ = function() {
     return;
   }
 
-  // Set the material opacity throughout.
-  var materials = this.text.material.materials;
-  for (var i = 0; i < materials.length; i++) {
-    var material = materials[i];
-    material.opacity = 1 - percent;
-  }
+  // Fade the text out.
+  this.text.material.opacity = 1 - percent;
 };
 
+
 VideoRenderer.prototype.addText_ = function(text) {
-  var material = new THREE.MeshFaceMaterial([
-    new THREE.MeshPhongMaterial({ color: 0xffffff, shading: THREE.FlatShading, transparent: true }), // front
-    new THREE.MeshPhongMaterial({ color: 0xffffff, shading: THREE.SmoothShading, transparent: true }) // side
-  ]);
-  var geometry = new THREE.TextGeometry(text, {
-    size: 20,
-    height: 5,
-    curveSegments: 5,
+  if (!this.textCanvas) {
+    // Create a canvas with the proper text rendered on it.
+    var canvas = document.createElement('canvas');
+    canvas.width = 800;
+    canvas.height = 200;
+    var ctx = canvas.getContext('2d');
+    ctx.font = '40pt Dosis';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    this.textCanvas = canvas;
+  }
+  var w = this.textCanvas.width;
+  var h = this.textCanvas.height;
+  var ctx = this.textCanvas.getContext('2d');
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = 'white';
+  ctx.fillText(text, w/2, h/2);
 
-    font: 'droid sans',
-    weight: 'normal',
-    style: 'normal',
+  // Use the canvas contents as a texture on a plane.
+  var texture = new THREE.Texture(this.textCanvas);
+  texture.needsUpdate = true;
+  var material = new THREE.MeshBasicMaterial({map: texture, side:THREE.DoubleSide});
+  material.transparent = true;
 
-    bevelThickness: 0.5,
-    bevelSize: 0.5,
-    bevelEnabled: 1,
-
-    material: 0,
-    extrudeMaterial: 1
-  });
-
-  var textMesh = new THREE.Mesh(geometry, material);
-
-  geometry.computeBoundingBox();
-  var width = geometry.boundingBox.max.x - geometry.boundingBox.min.x;
-  var centerOffset = -0.5 * width;
-  textMesh.position.set(centerOffset, 0, -300);
-
-  // Position this text in camera space.
+  var textMesh = new THREE.Mesh(
+    new THREE.PlaneGeometry(200, 50),
+    material
+  );
+  textMesh.position.set(0, 0, -150);
   this.camera.add(textMesh);
 
   return textMesh;
