@@ -13,7 +13,9 @@ function AudioRenderer() {
   // Whether we should stream the tracks via MediaElements, or load them
   // directly as audio buffers.
   // TODO(smus): Once crbug.com/419446 is fixed, switch to streaming.
-  this.isStreaming = !Util.isMobile();
+  this.isStreaming = false;
+
+  this.isMuted = false;
 
   // Various audio nodes keyed on UUID (so we can update them later).
   this.panners = {};
@@ -25,6 +27,9 @@ function AudioRenderer() {
   this.audioTags = {};
   this.ready = {};
   this.analysers = {};
+
+  // Source nodes.
+  this.sources = {};
 
   this.times = new Uint8Array(2048);
 
@@ -110,7 +115,14 @@ AudioRenderer.prototype.start = function() {
     } else {
       source.start(0);
     }
+
+    this.sources[id] = source;
   }
+};
+
+AudioRenderer.prototype.setMute = function(isMuted) {
+  var gain = isMuted ? 0 : 1;
+  this.mix.gain.value = gain;
 };
 
 AudioRenderer.prototype.render = function() {

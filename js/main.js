@@ -9,8 +9,10 @@ var manager;
 var isLoaded = false;
 
 function start() {
+  var set = Util.getParameterByName('set');
+  var mode = Util.getParameterByName('mode');
   // Create the world.
-  choreographer = new Choreographer();
+  choreographer = new Choreographer({set: set, mode: mode});
   manager = choreographer.manager;
   choreographer.on('modechanged', onModeChanged);
 
@@ -31,7 +33,11 @@ function start() {
       families: ['Dosis']
     },
     active: function() {
-      video.toast('headphones required', 5000);
+      if (window.orientation == 0 || window.orientation == 180) {
+        video.toast('headphones', 5000);
+      } else {
+        video.toast('headphones required', 5000);
+      }
     },
   });
 
@@ -114,6 +120,17 @@ function dots(num) {
   return out;
 }
 
+function onVisibilityChange(e) {
+  if (!document.hidden) {
+    // Play the sounds when page becomes visible.
+    audio.setMute(false);
+  } else {
+    // Pause them when the page is hidden.
+    audio.setMute(true);
+  }
+}
+
 window.addEventListener('DOMContentLoaded', main);
 window.addEventListener('touchstart', onTouchStart);
 window.addEventListener('keydown', onKeyDown);
+document.addEventListener('visibilitychange', onVisibilityChange);

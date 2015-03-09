@@ -19,7 +19,7 @@ TrackManager.prototype.addTrack = function(track) {
 };
 
 TrackManager.prototype.setCameraQuaternion = function(quaternion) {
-  this.cameraQuaternion = quaternion;
+  this.cameraQuaternion = quaternion.clone();
 };
 
 TrackManager.prototype.getCameraQuaternion = function() {

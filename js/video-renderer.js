@@ -7,6 +7,9 @@ function VideoRenderer(params) {
   this.trackObjects = {};
 
   this.referenceTime = new Date();
+
+  // Dwell detector.
+  this.dwellDetector = new DwellDetector();
   // Initialize the scene.
   this.init();
 }
@@ -216,11 +219,20 @@ VideoRenderer.prototype.render = function() {
     this.animatePointCloud_(id, trackObject);
   }
 
+  // Calculate the amount of motion that happened this frame.
+  this.dwellDetector.updateCameraQuaternion(this.camera.quaternion);
   // Update the manager with the current heading.
   this.manager.setCameraQuaternion(this.camera.quaternion);
 
   // Update the toast.
   this.updateToast_();
+
+  // If we're dwelling (no motion) on something, tell instructions.
+  if (this.dwellDetector.isDwelling() && this.shouldShowActionReminder_()) {
+    var message = Util.isMobile() ? 'try tapping' : 'try the space key';
+    this.toast(message);
+    this.lastActionReminderTime = new Date();
+  }
 
   if (this.vr.isVRMode()) {
     this.effect.render(this.scene, this.camera);
@@ -259,6 +271,7 @@ VideoRenderer.prototype.addText_ = function(text) {
     ctx.font = '40pt Dosis';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
+    ctx.lineWidth = 4;
     this.textCanvas = canvas;
   }
   var w = this.textCanvas.width;
@@ -266,6 +279,8 @@ VideoRenderer.prototype.addText_ = function(text) {
   var ctx = this.textCanvas.getContext('2d');
   ctx.clearRect(0, 0, w, h);
   ctx.fillStyle = 'white';
+  ctx.strokeStyle = 'black';
+  ctx.strokeText(text, w/2, h/2);
   ctx.fillText(text, w/2, h/2);
 
   // Use the canvas contents as a texture on a plane.
@@ -305,4 +320,19 @@ VideoRenderer.prototype.animatePointCloud_ = function(id, cloud) {
   cloud.geometry.verticesNeedUpdate = true;
 };
 
+VideoRenderer.prototype.shouldShowActionReminder_ = function() {
+  var now = new Date();
+  if (!this.lastActionReminderTime) {
+    // Don't show it too soon into the session (wait 20s).
+    var timeSinceStart = now - this.referenceTime;
+    return timeSinceStart > 20000;
+  }
+  var timeSinceReminder = now - this.lastActionReminderTime;
+  // Wait at least 30s between reminders.
+  return timeSinceReminder > 30000;
+};
 
+function AngleDate(angle) {
+  this.angle = angle;
+  this.date = new Date();
+};

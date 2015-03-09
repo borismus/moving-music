@@ -1,12 +1,22 @@
-function Choreographer() {
+function Choreographer(opt_params) {
+  var params = opt_params || {};
+  var set = params.set || 'speech';
+  var mode = params.mode || Choreographer.Modes.CLUSTERED;
+  mode = parseInt(mode);
+
   this.manager = new TrackManager();
   this.mode_ = -1;
   this.callbacks_ = {};
 
-  //this.init();
-  this.initVocal();
+  if (set == 'speech') {
+    this.initVocal();
+  } else if (set == 'phoenix') {
+    this.initPhoenix();
+  } else if (set == 'jazz') {
+    this.initJazz();
+  }
 
-  this.setMode(Choreographer.Modes.CLUSTERED);
+  this.setMode(mode);
 }
 
 Choreographer.Modes = {
@@ -16,29 +26,29 @@ Choreographer.Modes = {
 };
 Choreographer.TOTAL_MODE_COUNT = 3;
 
-Choreographer.prototype.init = function() {
+Choreographer.prototype.initPhoenix = function() {
   var vocal = new MovingTrack({
-    src: 'snd/Accapela.mp3',
+    src: 'snd/phoenix/Accapela.mp3',
     color: 0xB8A795,
   });
   var bass = new MovingTrack({
-    src: 'snd/Bass.mp3',
+    src: 'snd/phoenix/Bass.mp3',
     color: 0xD97D48,
   });
   var beat = new MovingTrack({
-    src: 'snd/Beat.mp3',
+    src: 'snd/phoenix/Beat.mp3',
     color: 0x77A6A0,
   });
   var guitar = new MovingTrack({
-    src: 'snd/Guitar.mp3',
+    src: 'snd/phoenix/Guitar.mp3',
     color: 0x19414B,
   });
   var keys = new MovingTrack({
-    src: 'snd/Key.mp3',
+    src: 'snd/phoenix/Key.mp3',
     color: 0xACF0F2,
   });
   var percussion = new MovingTrack({
-    src: 'snd/Roll.mp3',
+    src: 'snd/phoenix/Roll.mp3',
     color: 0x1695A3,
   });
   this.manager.addTrack(percussion); // Don't do much -- keep on periphery.
@@ -51,26 +61,45 @@ Choreographer.prototype.init = function() {
 
 Choreographer.prototype.initVocal = function() {
   var cats = new MovingTrack({
-    src: 'snd/Cats.mp3',
+    src: 'snd/voice/Cats.mp3',
     color: 0xB8A795,
   });
   var nimoy = new MovingTrack({
-    src: 'snd/Nimoy.mp3',
+    src: 'snd/voice/Nimoy.mp3',
     color: 0xD97D48,
   });
   var roth = new MovingTrack({
-    src: 'snd/Roth.mp3',
+    src: 'snd/voice/Roth.mp3',
     color: 0x77A6A0,
   });
   var russian = new MovingTrack({
-    src: 'snd/Russian.mp3',
+    src: 'snd/voice/Russian.mp3',
     color: 0x19414B,
   });
 
-  this.manager.addTrack(cats); // Don't do much -- keep on periphery.
+  this.manager.addTrack(cats);
   this.manager.addTrack(nimoy);
   this.manager.addTrack(roth);
   this.manager.addTrack(russian);
+};
+
+Choreographer.prototype.initJazz = function() {
+  var bass = new MovingTrack({
+    src: 'snd/jazz/bass.mp3',
+    color: 0xB8A795,
+  });
+  var piano = new MovingTrack({
+    src: 'snd/jazz/piano.mp3',
+    color: 0xD97D48,
+  });
+  var snare = new MovingTrack({
+    src: 'snd/jazz/snare.mp3',
+    color: 0x77A6A0,
+  });
+
+  this.manager.addTrack(bass);
+  this.manager.addTrack(piano);
+  this.manager.addTrack(snare);
 };
 
 /**
@@ -107,7 +136,7 @@ Choreographer.prototype.setNextMode = function() {
  * Creates fixed position trajectories clustered around a point.
  */
 Choreographer.prototype.createClusteredTrajectory_ = function(index) {
-  var clusterPoint = new THREE.Vector3(0, -10, -200);
+  var clusterPoint = new THREE.Vector3(0, 0, -200);
   var angleRange = Math.PI/3;
 
   var percent = index / (this.manager.trackCount - 1);
