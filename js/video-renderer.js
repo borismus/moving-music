@@ -8,8 +8,6 @@ function VideoRenderer(params) {
 
   this.referenceTime = new Date();
 
-  // Dwell detector.
-  this.dwellDetector = new DwellDetector();
   // Initialize the scene.
   this.init();
 }
@@ -219,20 +217,12 @@ VideoRenderer.prototype.render = function() {
     this.animatePointCloud_(id, trackObject);
   }
 
-  // Calculate the amount of motion that happened this frame.
-  this.dwellDetector.updateCameraQuaternion(this.camera.quaternion);
   // Update the manager with the current heading.
   this.manager.setCameraQuaternion(this.camera.quaternion);
 
   // Update the toast.
   this.updateToast_();
 
-  // If we're dwelling (no motion) on something, tell instructions.
-  if (this.dwellDetector.isDwelling() && this.shouldShowActionReminder_()) {
-    var message = Util.isMobile() ? 'try tapping' : 'try the space key';
-    this.toast(message);
-    this.lastActionReminderTime = new Date();
-  }
 
   if (this.vr.isVRMode()) {
     this.effect.render(this.scene, this.camera);
@@ -318,21 +308,4 @@ VideoRenderer.prototype.animatePointCloud_ = function(id, cloud) {
     particle.applyQuaternion(particle.rotation);
   }
   cloud.geometry.verticesNeedUpdate = true;
-};
-
-VideoRenderer.prototype.shouldShowActionReminder_ = function() {
-  var now = new Date();
-  if (!this.lastActionReminderTime) {
-    // Don't show it too soon into the session (wait 20s).
-    var timeSinceStart = now - this.referenceTime;
-    return timeSinceStart > 20000;
-  }
-  var timeSinceReminder = now - this.lastActionReminderTime;
-  // Wait at least 30s between reminders.
-  return timeSinceReminder > 30000;
-};
-
-function AngleDate(angle) {
-  this.angle = angle;
-  this.date = new Date();
 };

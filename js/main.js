@@ -56,6 +56,7 @@ function updateProgress() {
     if (Util.iOS()) {
       video.toast('tap to start', 10000);
     }
+    choreographer.onStarted();
     return;
   }
   var percent = audio.getLoadingProgress();
@@ -90,6 +91,7 @@ function onModeChanged(mode) {
 
 function loop() {
   manager.update();
+  choreographer.update();
   video.render();
   audio.render();
 

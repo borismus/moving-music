@@ -5,6 +5,8 @@ function Choreographer(opt_params) {
   mode = parseInt(mode);
 
   this.manager = new TrackManager();
+  this.dwellDetector = new DwellDetector();
+
   this.mode_ = -1;
   this.callbacks_ = {};
 
@@ -102,6 +104,18 @@ Choreographer.prototype.initJazz = function() {
   this.manager.addTrack(snare);
 };
 
+Choreographer.prototype.update = function() {
+  this.dwellDetector.updateCameraQuaternion(this.manager.getCameraQuaternion());
+
+  // If we're dwelling (no motion) on something, tell instructions.
+  if (this.dwellDetector.isDwelling() && this.shouldShowActionReminder_()) {
+    var message = Util.isMobile() ? 'try tapping' : 'try the space key';
+    // TODO(smus): This breaks encapsulation of VideoRenderer. Fix!
+    video.toast(message);
+    this.lastActionReminderTime = new Date();
+  }
+};
+
 /**
  * Set the current mode of the musical playback: CLUSTERED, SURROUND or MOVING.
  */
@@ -129,6 +143,12 @@ Choreographer.prototype.on = function(eventName, callback) {
 Choreographer.prototype.setNextMode = function() {
   var newMode = this.mode_ + 1;
   this.setMode(newMode % Choreographer.TOTAL_MODE_COUNT, 3000);
+
+  this.didUserChangeMode = true;
+};
+
+Choreographer.prototype.onStarted = function() {
+  this.startTime = new Date();
 };
 
 
@@ -197,3 +217,20 @@ Choreographer.prototype.fire_ = function(callback) {
   args.shift();
   callback.apply(this, args);
 };
+
+Choreographer.prototype.shouldShowActionReminder_ = function() {
+  // Never show the change reminder if the user already changed modes.
+  if (this.didUserChangeMode) {
+    return false;
+  }
+  var now = new Date();
+  if (!this.lastActionReminderTime) {
+    // Don't show it too soon into the session (wait 20s).
+    var timeSinceStart = now - this.startTime;
+    return timeSinceStart > 10000;
+  }
+  var timeSinceReminder = now - this.lastActionReminderTime;
+  // Wait at least 30s between reminders.
+  return timeSinceReminder > 20000;
+};
+
