@@ -1,3 +1,18 @@
+/*
+ * Copyright 2015 Boris Smus. All Rights Reserved.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 function Trajectory() {
   this.type = 'invalid';
   this.referenceTime = new Date();
@@ -6,6 +21,11 @@ function Trajectory() {
 Trajectory.prototype.update = function(movingTrack, opt_timeDelta) {
   var position = this.getPosition(opt_timeDelta);
   movingTrack.position = [position.x, position.y, position.z];
+
+  if (this.getVelocity) {
+    var velocity = this.getVelocity(opt_timeDelta);
+    movingTrack.velocity = [velocity.x, velocity.y, velocity.z];
+  }
 };
 
 Trajectory.prototype.setReferenceTime = function(time) {
@@ -86,6 +106,9 @@ EllipticalTrajectory.prototype.getAngle = function(opt_timeDelta) {
   return angle;
 };
 
+/**
+ * In units per second.
+ */
 EllipticalTrajectory.prototype.getVelocity = function(opt_timeDelta) {
   var angle = this.getAngle(opt_timeDelta);
   // Velocity is the derivative of position.
@@ -124,13 +147,6 @@ EllipticalTrajectory.prototype.getPosition = function(opt_timeDelta) {
   return this.position;
 };
 
-EllipticalTrajectory.prototype.update = function(movingTrack) {
-  var position = this.getPosition();
-  var velocity = this.getVelocity();
-  movingTrack.position = [position.x, position.y, position.z];
-  movingTrack.velocity = [velocity.x, velocity.y, velocity.z];
-};
-
 /**
  * Object moves from one point to another on a line.
  */
@@ -147,6 +163,12 @@ LinearTrajectory.prototype = new Trajectory();
 
 LinearTrajectory.prototype.init = function() {
   this.position = new THREE.Vector3();
+
+  // Precompute velocity to be along the direction of movement.
+  this.velocity = new THREE.Vector3();
+  this.velocity.copy(this.end);
+  this.velocity.sub(this.start);
+  this.velocity.normalize();
 };
 
 LinearTrajectory.prototype.getPosition = function(opt_timeDelta) {
@@ -159,4 +181,8 @@ LinearTrajectory.prototype.getPosition = function(opt_timeDelta) {
   this.position.copy(this.start);
   this.position.lerp(this.end, percent);
   return this.position;
+};
+
+LinearTrajectory.prototype.getVelocity = function(opt_timeDelta) {
+  return this.velocity;
 };

@@ -1,3 +1,18 @@
+/*
+ * Copyright 2015 Boris Smus. All Rights Reserved.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 // Observer's sound cone configuration.
 var IN_FOV_GAIN = 1;
 var OUT_FOV_GAIN = 0.5;
@@ -5,7 +20,7 @@ var FOV_RAMP_TIME = 1.5;
 
 // Doppler effect configuration.
 var ENABLE_DOPPLER = false;
-var DOPPLER_FACTOR = 0.1;
+var DOPPLER_FACTOR = 1;
 
 var REF_DISTANCE = 300;
 
