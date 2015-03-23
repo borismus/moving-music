@@ -98,9 +98,9 @@ VideoRenderer.prototype.addLight = function() {
   var pointLight = new THREE.PointLight(0xFFFFFF);
 
   // set its position
-  pointLight.position.x = 10;
-  pointLight.position.y = 50;
-  pointLight.position.z = 130;
+  pointLight.position.x = 0;
+  pointLight.position.y = 0;
+  pointLight.position.z = 0;
 
   // add to the scene
   this.scene.add(pointLight);
@@ -114,7 +114,7 @@ VideoRenderer.prototype.addPointCloud = function(params) {
   var particles = new THREE.Geometry();
   var material = new THREE.PointCloudMaterial({
     color: color,
-    size: 20,
+    size: 0.5,
     map: THREE.ImageUtils.loadTexture('img/particle.png'),
     blending: THREE.AdditiveBlending,
     transparent: true,
@@ -295,10 +295,10 @@ VideoRenderer.prototype.addText_ = function(text) {
   material.transparent = true;
 
   var textMesh = new THREE.Mesh(
-    new THREE.PlaneGeometry(200, 50),
+    new THREE.PlaneGeometry(2, 0.5),
     material
   );
-  textMesh.position.set(0, 0, -150);
+  textMesh.position.set(0, 0, -1.5);
   this.camera.add(textMesh);
 
   return textMesh;
@@ -306,9 +306,9 @@ VideoRenderer.prototype.addText_ = function(text) {
 
 VideoRenderer.prototype.animatePointCloud_ = function(id, cloud) {
   var track = this.manager.tracks[id];
-  var RADIUS = 100;
+  var RADIUS = 1;
   // To give even quiet tracks some motion.
-  var FUDGE_FACTOR = 1;
+  var FUDGE_FACTOR = 0.1;
   var radius = FUDGE_FACTOR + track.amplitude * RADIUS;
   var now = new Date();
   var vertices = cloud.geometry.vertices;

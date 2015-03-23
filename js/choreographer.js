@@ -172,7 +172,7 @@ Choreographer.prototype.onStarted = function() {
  * Creates fixed position trajectories clustered around a point.
  */
 Choreographer.prototype.createClusteredTrajectory_ = function(index) {
-  var clusterPoint = new THREE.Vector3(0, 0, -200);
+  var clusterPoint = new THREE.Vector3(0, 0, -5);
   var angleRange = Math.PI/3;
 
   var percent = index / (this.manager.trackCount - 1);
@@ -188,7 +188,7 @@ Choreographer.prototype.createClusteredTrajectory_ = function(index) {
  * Creates fixed position trajectories that surround the viewer.
  */
 Choreographer.prototype.createSurroundTrajectory_ = function(index) {
-  var radius = 200;
+  var radius = 5;
   var phase = 0;
   var percent = index / this.manager.trackCount;
   // Generate a position around the viewer.
@@ -203,7 +203,7 @@ Choreographer.prototype.createSurroundTrajectory_ = function(index) {
 Choreographer.prototype.createMovingTrajectory_ = function(index) {
   var percent = index / this.manager.trackCount;
   var period = 30000;
-  var radius = 200;
+  var radius = 5;
   return new EllipticalTrajectory({
     period: period,
     phase: percent * 2*Math.PI - Math.PI,

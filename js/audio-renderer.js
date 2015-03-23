@@ -22,7 +22,7 @@ var FOV_RAMP_TIME = 1.5;
 var ENABLE_DOPPLER = false;
 var DOPPLER_FACTOR = 1;
 
-var REF_DISTANCE = 300;
+var REF_DISTANCE = 3;
 
 function AudioRenderer() {
   // Whether we should stream the tracks via MediaElements, or load them
