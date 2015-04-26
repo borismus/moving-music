@@ -124,12 +124,15 @@ WebVRManager.prototype.createVRButton = function() {
   s.userSelect = 'none';
   s.webkitUserSelect = 'none';
   s.MozUserSelect = 'none';
+  s.cursor = 'pointer';
   // Prevent button from being dragged.
   button.draggable = false;
   button.addEventListener('dragstart', function(e) {
     e.preventDefault();
   });
-  document.body.appendChild(button);
+  if (!this.hideButton) {
+    document.body.appendChild(button);
+  }
   return button;
 };
 
@@ -379,10 +382,6 @@ WebVRManager.prototype.exitVR = function() {
 
   // Go back to the default mode.
   this.setMode(this.defaultMode);
-};
-
-
-WebVRManager.prototype.onResize = function() {
 };
 
 // Expose the WebVRManager class globally.

@@ -44,29 +44,30 @@ Choreographer.Modes = {
 Choreographer.TOTAL_MODE_COUNT = 3;
 
 Choreographer.prototype.initPhoenix = function() {
+  var set = 'phoenix';
   var vocal = new MovingTrack({
     name: 'vocal',
-    src: 'snd/phoenix/Accapela.mp3',
+    src: this.getAudioFile(set, 'Accapela'),
     color: 0xB8A795,
   });
   var bass = new MovingTrack({
-    src: 'snd/phoenix/Bass.mp3',
+    src: this.getAudioFile(set, 'Bass'),
     color: 0xD97D48,
   });
   var beat = new MovingTrack({
-    src: 'snd/phoenix/Beat.mp3',
+    src: this.getAudioFile(set, 'Beat'),
     color: 0x77A6A0,
   });
   var guitar = new MovingTrack({
-    src: 'snd/phoenix/Guitar.mp3',
+    src: this.getAudioFile(set, 'Guitar'),
     color: 0x19414B,
   });
   var keys = new MovingTrack({
-    src: 'snd/phoenix/Key.mp3',
+    src: this.getAudioFile(set, 'Key'),
     color: 0xACF0F2,
   });
   var percussion = new MovingTrack({
-    src: 'snd/phoenix/Roll.mp3',
+    src: this.getAudioFile(set, 'Roll'),
     color: 0x1695A3,
   });
   this.manager.addTrack(percussion); // Don't do much -- keep on periphery.
@@ -78,20 +79,21 @@ Choreographer.prototype.initPhoenix = function() {
 }
 
 Choreographer.prototype.initVocal = function() {
+  var set = 'voice';
   var cats = new MovingTrack({
-    src: 'snd/voice/Cats.mp3',
+    src: this.getAudioFile(set, 'Cats'),
     color: 0xB8A795,
   });
   var nimoy = new MovingTrack({
-    src: 'snd/voice/Nimoy.mp3',
+    src: this.getAudioFile(set, 'Nimoy'),
     color: 0xD97D48,
   });
   var roth = new MovingTrack({
-    src: 'snd/voice/Roth.mp3',
+    src: this.getAudioFile(set, 'Roth'),
     color: 0x77A6A0,
   });
   var russian = new MovingTrack({
-    src: 'snd/voice/Russian.mp3',
+    src: this.getAudioFile(set, 'Russian'),
     color: 0x19414B,
   });
 
@@ -102,22 +104,28 @@ Choreographer.prototype.initVocal = function() {
 };
 
 Choreographer.prototype.initJazz = function() {
+  var set = 'jazz';
   var bass = new MovingTrack({
-    src: 'snd/jazz/bass.mp3',
+    src: this.getAudioFile(set, 'bass'),
     color: 0xB8A795,
   });
   var piano = new MovingTrack({
-    src: 'snd/jazz/piano.mp3',
+    src: this.getAudioFile(set, 'piano'),
     color: 0xD97D48,
   });
   var snare = new MovingTrack({
-    src: 'snd/jazz/snare.mp3',
+    src: this.getAudioFile(set, 'snare'),
     color: 0x77A6A0,
   });
 
   this.manager.addTrack(bass);
   this.manager.addTrack(piano);
   this.manager.addTrack(snare);
+};
+
+Choreographer.prototype.getAudioFile = function(set, basename) {
+  var extension = Util.isMp3Supported() ? 'mp3' : 'ogg';
+  return 'snd/' + set + '/' + basename + '.' + extension;
 };
 
 Choreographer.prototype.update = function() {

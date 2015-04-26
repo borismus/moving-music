@@ -83,3 +83,8 @@ Util.getParameterByName = function(name) {
   var results = regex.exec(location.search);
   return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
 };
+
+Util.isMp3Supported = function() {
+  var a = document.createElement('audio');
+  return !!a.canPlayType('audio/mp3')
+};
