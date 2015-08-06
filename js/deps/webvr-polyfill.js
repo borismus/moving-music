@@ -1,6 +1,6 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 /*
- * Copyright 2015 Boris Smus. All Rights Reserved.
+ * Copyright 2015 Google Inc. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -43,7 +43,7 @@ module.exports.PositionSensorVRDevice = PositionSensorVRDevice;
 
 },{}],2:[function(require,module,exports){
 /*
- * Copyright 2015 Boris Smus. All Rights Reserved.
+ * Copyright 2015 Google Inc. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -109,7 +109,7 @@ module.exports = CardboardHMDVRDevice;
 
 },{"./base.js":1}],3:[function(require,module,exports){
 /*
- * Copyright 2015 Boris Smus. All Rights Reserved.
+ * Copyright 2015 Google Inc. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -124,6 +124,7 @@ module.exports = CardboardHMDVRDevice;
  */
 var PositionSensorVRDevice = require('./base.js').PositionSensorVRDevice;
 var THREE = require('./three-math.js');
+var PosePredictor = require('./pose-predictor.js');
 
 /**
  * The positional sensor, implemented using web DeviceOrientation APIs.
@@ -134,16 +135,20 @@ function GyroPositionSensorVRDevice() {
 
   // Subscribe to deviceorientation events.
   window.addEventListener('deviceorientation', this.onDeviceOrientationChange.bind(this));
+  window.addEventListener('devicemotion', this.onDeviceMotionChange.bind(this));
   window.addEventListener('orientationchange', this.onScreenOrientationChange.bind(this));
   this.deviceOrientation = null;
   this.screenOrientation = window.orientation;
 
   // Helper objects for calculating orientation.
   this.finalQuaternion = new THREE.Quaternion();
+  this.tmpQuaternion = new THREE.Quaternion();
   this.deviceEuler = new THREE.Euler();
   this.screenTransform = new THREE.Quaternion();
   // -PI/2 around the x-axis.
   this.worldTransform = new THREE.Quaternion(-Math.sqrt(0.5), 0, 0, Math.sqrt(0.5));
+
+  this.posePredictor = new PosePredictor();
 }
 GyroPositionSensorVRDevice.prototype = new PositionSensorVRDevice();
 
@@ -163,6 +168,11 @@ GyroPositionSensorVRDevice.prototype.getState = function() {
 GyroPositionSensorVRDevice.prototype.onDeviceOrientationChange =
     function(deviceOrientation) {
   this.deviceOrientation = deviceOrientation;
+};
+
+GyroPositionSensorVRDevice.prototype.onDeviceMotionChange =
+    function(deviceMotion) {
+  this.deviceMotion = deviceMotion;
 };
 
 GyroPositionSensorVRDevice.prototype.onScreenOrientationChange =
@@ -192,15 +202,45 @@ GyroPositionSensorVRDevice.prototype.getOrientation = function() {
   this.finalQuaternion.multiply(this.screenTransform);
   this.finalQuaternion.multiply(this.worldTransform);
 
-  return this.finalQuaternion;
+  // DEBUG ONLY: Log rotation rate if it's large enough.
+  /*
+  if (this.deviceMotion) {
+    var rotRate = this.deviceMotion.rotationRate;
+    if (Math.abs(rotRate.alpha) > 5) {
+      console.log('Rotation around Z: %f deg', rotRate.alpha);
+    }
+    if (Math.abs(rotRate.beta) > 5) {
+      console.log('Rotation around X: %f deg', rotRate.beta);
+    }
+    if (Math.abs(rotRate.gamma) > 5) {
+      console.log('Rotation around Y: %f deg', rotRate.gamma);
+    }
+  }
+  */
+  this.posePredictor.setScreenOrientation(this.screenOrientation);
+
+  //var bestTime = this.rafTime || window.performance.now();
+  //var bestTime = window.performance.now();
+  var bestTime = this.deviceOrientation.timeStamp;
+  var rotRate = this.deviceMotion && this.deviceMotion.rotationRate;
+  return this.posePredictor.getPrediction(
+      this.finalQuaternion, rotRate, bestTime);
+};
+
+GyroPositionSensorVRDevice.prototype.resetSensor = function() {
+  console.error('Not implemented yet.');
+};
+
+GyroPositionSensorVRDevice.prototype.setAnimationFrameTime = function(rafTime) {
+  this.rafTime = rafTime;
 };
 
 
 module.exports = GyroPositionSensorVRDevice;
 
-},{"./base.js":1,"./three-math.js":6}],4:[function(require,module,exports){
+},{"./base.js":1,"./pose-predictor.js":6,"./three-math.js":7}],4:[function(require,module,exports){
 /*
- * Copyright 2015 Boris Smus. All Rights Reserved.
+ * Copyright 2015 Google Inc. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -217,9 +257,9 @@ var WebVRPolyfill = require('./webvr-polyfill.js');
 
 new WebVRPolyfill();
 
-},{"./webvr-polyfill.js":7}],5:[function(require,module,exports){
+},{"./webvr-polyfill.js":8}],5:[function(require,module,exports){
 /*
- * Copyright 2015 Boris Smus. All Rights Reserved.
+ * Copyright 2015 Google Inc. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -384,9 +424,289 @@ MouseKeyboardPositionSensorVRDevice.prototype.isPointerLocked_ = function() {
   return el !== undefined;
 };
 
+MouseKeyboardPositionSensorVRDevice.prototype.resetSensor = function() {
+  console.error('Not implemented yet.');
+};
+
 module.exports = MouseKeyboardPositionSensorVRDevice;
 
-},{"./base.js":1,"./three-math.js":6}],6:[function(require,module,exports){
+},{"./base.js":1,"./three-math.js":7}],6:[function(require,module,exports){
+/*
+ * Copyright 2015 Google Inc. All Rights Reserved.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+var PredictionMode = {
+  NONE: 0,
+  INTERPOLATE: 1,
+  PREDICT: 2
+}
+
+// How much to interpolate between the current orientation estimate and the
+// previous estimate position. This is helpful for devices with low
+// deviceorientation firing frequency (eg. on iOS8 and below, it is 20 Hz).  The
+// larger this value (in [0, 1]), the smoother but more delayed the head
+// tracking is.
+var INTERPOLATION_SMOOTHING_FACTOR = 0.01;
+
+// Angular threshold, if the angular speed (in deg/s) is less than this, do no
+// prediction. Without it, the screen flickers quite a bit.
+var PREDICTION_THRESHOLD_DEG_PER_S = 0.01;
+//var PREDICTION_THRESHOLD_DEG_PER_S = 0;
+
+// How far into the future to predict.
+WEBVR_PREDICTION_TIME_MS = 80;
+
+// Whether to predict or what.
+WEBVR_PREDICTION_MODE = PredictionMode.PREDICT;
+
+function PosePredictor() {
+  this.lastQ = new THREE.Quaternion();
+  this.lastTimestamp = null;
+
+  this.outQ = new THREE.Quaternion();
+  this.deltaQ = new THREE.Quaternion();
+}
+
+PosePredictor.prototype.getPrediction = function(currentQ, rotationRate, timestamp) {
+  // If there's no previous quaternion, output the current one and save for
+  // later.
+  if (!this.lastTimestamp) {
+    this.lastQ.copy(currentQ);
+    this.lastTimestamp = timestamp;
+    return currentQ;
+  }
+
+  // DEBUG ONLY: Try with a fixed 60 Hz update speed.
+  //var elapsedMs = 1000/60;
+  var elapsedMs = timestamp - this.lastTimestamp;
+
+  switch (WEBVR_PREDICTION_MODE) {
+    case PredictionMode.INTERPOLATE:
+      this.outQ.copy(currentQ);
+      this.outQ.slerp(this.lastQ, INTERPOLATION_SMOOTHING_FACTOR);
+
+      // Save the current quaternion for later.
+      this.lastQ.copy(currentQ);
+      break;
+    case PredictionMode.PREDICT:
+      var axisAngle;
+      if (rotationRate) {
+        axisAngle = this.getAxisAngularSpeedFromRotationRate_(rotationRate);
+      } else {
+        axisAngle = this.getAxisAngularSpeedFromGyroDelta_(currentQ, elapsedMs);
+      }
+
+      // If there is no predicted axis/angle, don't do prediction.
+      if (!axisAngle) {
+        this.outQ.copy(currentQ);
+        this.lastQ.copy(currentQ);
+        break;
+      }
+      var angularSpeedDegS = axisAngle.speed;
+      var axis = axisAngle.axis;
+      var predictAngleDeg = (WEBVR_PREDICTION_TIME_MS / 1000) * angularSpeedDegS;
+
+      // If we're rotating slowly, don't do prediction.
+      if (angularSpeedDegS < PREDICTION_THRESHOLD_DEG_PER_S) {
+        this.outQ.copy(currentQ);
+        this.lastQ.copy(currentQ);
+        break;
+      }
+
+      // Calculate the prediction delta to apply to the original angle.
+      this.deltaQ.setFromAxisAngle(axis, THREE.Math.degToRad(predictAngleDeg));
+      // DEBUG ONLY: As a sanity check, use the same axis and angle as before,
+      // which should cause no prediction to happen.
+      //this.deltaQ.setFromAxisAngle(axis, angle);
+
+      this.outQ.copy(this.lastQ);
+      this.outQ.multiply(this.deltaQ);
+
+      // DEBUG ONLY: report the abs. difference between actual and predicted
+      // angles.
+      /*
+      var angleDelta = predictAngleDeg - THREE.Math.radToDeg(angleRad);
+      if (Math.abs(angleDelta) > 5) {
+        console.log('|Actual-Predicted| = %f deg', angleDelta);
+      }
+      */
+
+      // Use the predicted quaternion as the new last one.
+      //this.lastQ.copy(this.outQ);
+      this.lastQ.copy(currentQ);
+      break;
+    case PredictionMode.NONE:
+    default:
+      this.outQ.copy(currentQ);
+  }
+  this.lastTimestamp = timestamp;
+
+  return this.outQ;
+};
+
+PosePredictor.prototype.setScreenOrientation = function(screenOrientation) {
+  this.screenOrientation = screenOrientation;
+};
+
+PosePredictor.prototype.getAxis_ = function(quat) {
+  // x = qx / sqrt(1-qw*qw)
+  // y = qy / sqrt(1-qw*qw)
+  // z = qz / sqrt(1-qw*qw)
+  var d = Math.sqrt(1 - quat.w * quat.w);
+  return new THREE.Vector3(quat.x / d, quat.y / d, quat.z / d);
+};
+
+PosePredictor.prototype.getAngle_ = function(quat) {
+  // angle = 2 * acos(qw)
+  // If w is greater than 1 (THREE.js, how can this be?), arccos is not defined.
+  if (quat.w > 1) {
+    return 0;
+  }
+  var angle = 2 * Math.acos(quat.w);
+  // Normalize the angle to be in [-π, π].
+  if (angle > Math.PI) {
+    angle -= 2 * Math.PI;
+  }
+  return angle;
+};
+
+PosePredictor.prototype.getAxisAngularSpeedFromRotationRate_ = function(rotationRate) {
+  if (!rotationRate) {
+    return null;
+  }
+  var screenRotationRate;
+  if (/iPad|iPhone|iPod/.test(navigator.platform)) {
+    // iOS: angular speed in deg/s.
+    var screenRotationRate = this.getScreenAdjustedRotationRateIOS_(rotationRate);
+  } else {
+    // Android: angular speed in rad/s, so need to convert.
+    rotationRate.alpha = THREE.Math.radToDeg(rotationRate.alpha);
+    rotationRate.beta = THREE.Math.radToDeg(rotationRate.beta);
+    rotationRate.gamma = THREE.Math.radToDeg(rotationRate.gamma);
+    var screenRotationRate = this.getScreenAdjustedRotationRate_(rotationRate);
+  }
+  var vec = new THREE.Vector3(
+      screenRotationRate.beta, screenRotationRate.alpha, screenRotationRate.gamma);
+
+  /*
+  var vec;
+  if (/iPad|iPhone|iPod/.test(navigator.platform)) {
+    vec = new THREE.Vector3(rotationRate.gamma, rotationRate.alpha, rotationRate.beta);
+  } else {
+    vec = new THREE.Vector3(rotationRate.beta, rotationRate.alpha, rotationRate.gamma);
+  }
+  // Take into account the screen orientation too!
+  vec.applyQuaternion(this.screenTransform);
+  */
+
+  // Angular speed in deg/s.
+  var angularSpeedDegS = vec.length();
+
+  var axis = vec.normalize();
+  return {
+    speed: angularSpeedDegS,
+    axis: axis
+  }
+};
+
+PosePredictor.prototype.getScreenAdjustedRotationRate_ = function(rotationRate) {
+  var screenRotationRate = {
+    alpha: -rotationRate.alpha,
+    beta: rotationRate.beta,
+    gamma: rotationRate.gamma
+  };
+  switch (this.screenOrientation) {
+    case 90:
+      screenRotationRate.beta  = - rotationRate.gamma;
+      screenRotationRate.gamma =   rotationRate.beta;
+      break;
+    case 180:
+      screenRotationRate.beta  = - rotationRate.beta;
+      screenRotationRate.gamma = - rotationRate.gamma;
+      break;
+    case 270:
+    case -90:
+      screenRotationRate.beta  =   rotationRate.gamma;
+      screenRotationRate.gamma = - rotationRate.beta;
+      break;
+    default: // SCREEN_ROTATION_0
+      screenRotationRate.beta  =   rotationRate.beta;
+      screenRotationRate.gamma =   rotationRate.gamma;
+      break;
+  }
+  return screenRotationRate;
+};
+
+PosePredictor.prototype.getScreenAdjustedRotationRateIOS_ = function(rotationRate) {
+  var screenRotationRate = {
+    alpha: rotationRate.alpha,
+    beta: rotationRate.beta,
+    gamma: rotationRate.gamma
+  };
+  // Values empirically derived.
+  switch (this.screenOrientation) {
+    case 90:
+      screenRotationRate.beta  = -rotationRate.beta;
+      screenRotationRate.gamma =  rotationRate.gamma;
+      break;
+    case 180:
+      // You can't even do this on iOS.
+      break;
+    case 270:
+    case -90:
+      screenRotationRate.alpha = -rotationRate.alpha;
+      screenRotationRate.beta  =  rotationRate.beta;
+      screenRotationRate.gamma =  rotationRate.gamma;
+      break;
+    default: // SCREEN_ROTATION_0
+      screenRotationRate.alpha =  rotationRate.beta;
+      screenRotationRate.beta  =  rotationRate.alpha;
+      screenRotationRate.gamma =  rotationRate.gamma;
+      break;
+  }
+  return screenRotationRate;
+};
+
+PosePredictor.prototype.getAxisAngularSpeedFromGyroDelta_ = function(currentQ, elapsedMs) {
+  // Sometimes we use the same sensor timestamp, in which case prediction
+  // won't work.
+  if (elapsedMs == 0) {
+    return null;
+  }
+  // Q_delta = Q_last^-1 * Q_curr
+  this.deltaQ.copy(this.lastQ);
+  this.deltaQ.inverse();
+  this.deltaQ.multiply(currentQ);
+
+  // Convert from delta quaternion to axis-angle.
+  var axis = this.getAxis_(this.deltaQ);
+  var angleRad = this.getAngle_(this.deltaQ);
+  // It took `elapsed` ms to travel the angle amount over the axis. Now,
+  // we make a new quaternion based how far in the future we want to
+  // calculate.
+  var angularSpeedRadMs = angleRad / elapsedMs;
+  var angularSpeedDegS = THREE.Math.radToDeg(angularSpeedRadMs) * 1000;
+  // If no rotation rate is provided, do no prediction.
+  return {
+    speed: angularSpeedDegS,
+    axis: axis
+  };
+};
+
+module.exports = PosePredictor;
+
+},{}],7:[function(require,module,exports){
 /*
  * A subset of THREE.js, providing mostly quaternion and euler-related
  * operations, manually lifted from
@@ -397,7 +717,7 @@ module.exports = MouseKeyboardPositionSensorVRDevice;
 var THREE = window.THREE || {};
 
 // If some piece of THREE is missing, fill it in here.
-if (!THREE.Quaternion || !THREE.Vector3 || !THREE.Vector2 || !THREE.Euler) {
+if (!THREE.Quaternion || !THREE.Vector3 || !THREE.Vector2 || !THREE.Euler || !THREE.Math) {
 console.log('No THREE.js found.');
 
 
@@ -2505,14 +2825,185 @@ THREE.Euler.prototype = {
 
 };
 /*** END Euler ***/
+/*** START Math ***/
+/**
+ * @author alteredq / http://alteredqualia.com/
+ * @author mrdoob / http://mrdoob.com/
+ */
+
+THREE.Math = {
+
+	generateUUID: function () {
+
+		// http://www.broofa.com/Tools/Math.uuid.htm
+
+		var chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'.split( '' );
+		var uuid = new Array( 36 );
+		var rnd = 0, r;
+
+		return function () {
+
+			for ( var i = 0; i < 36; i ++ ) {
+
+				if ( i == 8 || i == 13 || i == 18 || i == 23 ) {
+
+					uuid[ i ] = '-';
+
+				} else if ( i == 14 ) {
+
+					uuid[ i ] = '4';
+
+				} else {
+
+					if ( rnd <= 0x02 ) rnd = 0x2000000 + ( Math.random() * 0x1000000 ) | 0;
+					r = rnd & 0xf;
+					rnd = rnd >> 4;
+					uuid[ i ] = chars[ ( i == 19 ) ? ( r & 0x3 ) | 0x8 : r ];
+
+				}
+			}
+
+			return uuid.join( '' );
+
+		};
+
+	}(),
+
+	// Clamp value to range <a, b>
+
+	clamp: function ( x, a, b ) {
+
+		return ( x < a ) ? a : ( ( x > b ) ? b : x );
+
+	},
+
+	// Clamp value to range <a, inf)
+
+	clampBottom: function ( x, a ) {
+
+		return x < a ? a : x;
+
+	},
+
+	// Linear mapping from range <a1, a2> to range <b1, b2>
+
+	mapLinear: function ( x, a1, a2, b1, b2 ) {
+
+		return b1 + ( x - a1 ) * ( b2 - b1 ) / ( a2 - a1 );
+
+	},
+
+	// http://en.wikipedia.org/wiki/Smoothstep
+
+	smoothstep: function ( x, min, max ) {
+
+		if ( x <= min ) return 0;
+		if ( x >= max ) return 1;
+
+		x = ( x - min ) / ( max - min );
+
+		return x * x * ( 3 - 2 * x );
+
+	},
+
+	smootherstep: function ( x, min, max ) {
+
+		if ( x <= min ) return 0;
+		if ( x >= max ) return 1;
+
+		x = ( x - min ) / ( max - min );
+
+		return x * x * x * ( x * ( x * 6 - 15 ) + 10 );
+
+	},
+
+	// Random float from <0, 1> with 16 bits of randomness
+	// (standard Math.random() creates repetitive patterns when applied over larger space)
+
+	random16: function () {
+
+		return ( 65280 * Math.random() + 255 * Math.random() ) / 65535;
+
+	},
+
+	// Random integer from <low, high> interval
+
+	randInt: function ( low, high ) {
+
+		return Math.floor( this.randFloat( low, high ) );
+
+	},
+
+	// Random float from <low, high> interval
+
+	randFloat: function ( low, high ) {
+
+		return low + Math.random() * ( high - low );
+
+	},
+
+	// Random float from <-range/2, range/2> interval
+
+	randFloatSpread: function ( range ) {
+
+		return range * ( 0.5 - Math.random() );
+
+	},
+
+	degToRad: function () {
+
+		var degreeToRadiansFactor = Math.PI / 180;
+
+		return function ( degrees ) {
+
+			return degrees * degreeToRadiansFactor;
+
+		};
+
+	}(),
+
+	radToDeg: function () {
+
+		var radianToDegreesFactor = 180 / Math.PI;
+
+		return function ( radians ) {
+
+			return radians * radianToDegreesFactor;
+
+		};
+
+	}(),
+
+	isPowerOfTwo: function ( value ) {
+
+		return ( value & ( value - 1 ) ) === 0 && value !== 0;
+
+	},
+
+	nextPowerOfTwo: function ( value ) {
+
+		value --;
+		value |= value >> 1;
+		value |= value >> 2;
+		value |= value >> 4;
+		value |= value >> 8;
+		value |= value >> 16;
+		value ++;
+
+		return value;
+	}
+
+};
+
+/*** END Math ***/
 
 }
 
 module.exports = THREE;
 
-},{}],7:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 /*
- * Copyright 2015 Boris Smus. All Rights Reserved.
+ * Copyright 2015 Google Inc. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -2525,6 +3016,7 @@ module.exports = THREE;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 var CardboardHMDVRDevice = require('./cardboard-hmd-vr-device.js');
 var GyroPositionSensorVRDevice = require('./gyro-position-sensor-vr-device.js');
 var MouseKeyboardPositionSensorVRDevice = require('./mouse-keyboard-position-sensor-vr-device.js');
@@ -2585,12 +3077,13 @@ WebVRPolyfill.prototype.getVRDevices = function() {
  */
 WebVRPolyfill.prototype.isMobile = function() {
   return /Android/i.test(navigator.userAgent) ||
-      /iPhone|iPad|iPod/i.test(navigator.userAgent);;
+      /iPhone|iPad|iPod/i.test(navigator.userAgent);
 };
 
 WebVRPolyfill.prototype.isCardboardCompatible = function() {
   // For now, support all iOS and Android devices.
-  return this.isMobile();
+  // Also enable the global CARDBOARD_DEBUG flag.
+  return this.isMobile() || window.CARDBOARD_DEBUG;
 };
 
 module.exports = WebVRPolyfill;
