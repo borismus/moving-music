@@ -24,7 +24,9 @@ var DOPPLER_FACTOR = 1;
 
 var REF_DISTANCE = 3;
 
-function AudioRenderer() {
+function AudioRenderer(params) {
+  var params = params || {};
+  this.reverb = params.reverb || 'forest';
   // Whether we should stream the tracks via MediaElements, or load them
   // directly as audio buffers.
   // TODO(smus): Once crbug.com/419446 is fixed, switch to streaming.
@@ -66,7 +68,7 @@ AudioRenderer.prototype.init = function() {
 
   // Pipe the mix through a convolver node for a room effect.
   var convolver = this.context.createConvolver();
-  Util.loadTrackSrc(this.context, 'snd/forest_impulse_response.wav', function(buffer) {
+  Util.loadTrackSrc(this.context, 'snd/' + this.reverb + '_impulse_response.wav', function(buffer) {
     convolver.buffer = buffer;
   });
   convolver.connect(this.context.destination);

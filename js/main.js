@@ -26,6 +26,7 @@ var isLoaded = false;
 function start() {
   var set = Util.getParameterByName('set');
   var mode = Util.getParameterByName('mode');
+  var reverb = Util.getParameterByName('reverb');
   // Create the world.
   choreographer = new Choreographer({set: set, mode: mode});
   manager = choreographer.manager;
@@ -38,7 +39,7 @@ function start() {
   video.addSkybox();
 
   // Create the audio renderer.
-  audio = new AudioRenderer();
+  audio = new AudioRenderer({reverb: reverb});
   audio.setManager(manager);
   audio.on('ready', onAudioLoaded);
 
